@@ -101,7 +101,7 @@ input,textarea{width:100%;min-height:48px;padding:11px 12px;margin-bottom:8px;bo
 <p>Chọn món từ nhiều quán ngon quanh bạn trong một đơn. Chúng tôi sẽ gọi xác nhận và giao tận nơi.</p>
 <button class="order" id="popok">Xem thực đơn</button></div></div>
 <div class="pop" id="rpop" role="dialog" aria-modal="true" aria-labelledby="rtitle" hidden>
-<div class="pbox"><h2 id="rtitle">Đánh giá quán</h2><p>Nhập mã đơn bạn đã nhận (dạng LT-0101-1234) rồi chọn số sao.</p>
+<div class="pbox"><h2 id="rtitle">Đánh giá quán</h2><p>Chỉ đánh giá được khi đơn đã giao. Nhập mã đơn (dạng LT-0101-1234) rồi chọn số sao.</p>
 <input id="rcode" placeholder="Mã đơn" autocapitalize="characters">
 <div class="stars" id="stars"><button data-star="1" aria-label="1 sao">☆</button><button data-star="2" aria-label="2 sao">☆</button><button data-star="3" aria-label="3 sao">☆</button><button data-star="4" aria-label="4 sao">☆</button><button data-star="5" aria-label="5 sao">☆</button></div>
 <textarea id="rcmt" rows="3" placeholder="Nhận xét về món, quán (không bắt buộc)"></textarea>
@@ -147,7 +147,7 @@ async function load(){
  MENU=Array.isArray(D)?D:(D.menu||[]);MENU.forEach((m,i)=>m.id=i);
  SHOPS=(Array.isArray(D)?[]:(D.shops||[])).map(x=>({name:x.name,logo:x.logo,desc:x.desc,avg:x.avg,cnt:x.cnt}));
  MENU.forEach(m=>{if(!SHOPS.some(x=>x.name===m.shop))SHOPS.push({name:m.shop,logo:'',desc:''})});
- SHOPS.forEach(x=>{const it=MENU.filter(m=>m.shop===x.name);x.n=it.length;x.emoji=it[0]?it[0].emoji:'🍽️'});
+ SHOPS.forEach(x=>{const it=MENU.filter(m=>m.shop===x.name);x.n=it.length;x.emoji=it[0]?it[0].emoji:'🍽️';if(!x.desc)x.desc=it.slice(0,4).map(m=>m.name).join(' · ')});
  SHOPS=SHOPS.filter(x=>x.n>0);draw();
 }
 const logo=(x,c)=>{const u=imgUrl(x.logo);return `<div class="${c}" aria-hidden="true">${esc(x.emoji)}${u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:''}</div>`};
@@ -208,7 +208,7 @@ $('order').onclick=async()=>{
  $('order').disabled=true;m.textContent='Đang gửi đơn…';
  try{
   await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({code,name,phone,addr,note:$('note').value.trim(),map:MAP,pay,ship,items,total})});
-  m.innerHTML='<b>Đặt hàng thành công!</b><br>Mã đơn: <b>'+code+'</b><br>'+items.map(x=>x.qty+' x '+esc(x.name)).join('<br>')+'<br>Phí giao: '+ship+'<br>Tiền món: <b>'+money(total)+'</b> ('+pay+')<br>Chúng tôi sẽ gọi xác nhận qua số '+esc(phone)+'. Cần hỗ trợ gọi '+PHONE+'.'+(pay==='Chuyển khoản'?payBox(code,total):'')+'<br><small>Ăn xong, mời bạn đánh giá quán (cần mã đơn ở trên):</small>'+[...new Set(items.map(x=>x.shop))].map(sp=>'<button class="loc" data-rate="'+esc(sp)+'">⭐ Đánh giá '+esc(sp)+'</button>').join('');
+  m.innerHTML='<b>Đặt hàng thành công!</b><br>Mã đơn: <b>'+code+'</b><br>'+items.map(x=>x.qty+' x '+esc(x.name)).join('<br>')+'<br>Phí giao: '+ship+'<br>Tiền món: <b>'+money(total)+'</b> ('+pay+')<br>Chúng tôi sẽ gọi xác nhận qua số '+esc(phone)+'. Cần hỗ trợ gọi '+PHONE+'.'+(pay==='Chuyển khoản'?payBox(code,total):'')+'<br><small>Khi đơn đã giao, mời bạn đánh giá quán (cần mã đơn ở trên):</small>'+[...new Set(items.map(x=>x.shop))].map(sp=>'<button class="loc" data-rate="'+esc(sp)+'">⭐ Đánh giá '+esc(sp)+'</button>').join('');
   try{localStorage.setItem('lastcode',code)}catch(e){}for(const k in cart)delete cart[k];MAP='';$('locmsg').textContent=LOCTXT;draw();drawCart();
  }catch(e){m.textContent='Gửi đơn chưa được. Vui lòng kiểm tra mạng và thử lại.'}
  $('order').disabled=false;
