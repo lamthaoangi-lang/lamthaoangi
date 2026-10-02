@@ -32,7 +32,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .shophead h2{font-size:1.1rem;line-height:1.2}.shophead small{color:var(--mute)}
 .dish{display:flex;gap:12px;align-items:center;padding:14px;border-bottom:1px solid var(--line)}
 .dish:last-child{border-bottom:0}
-.ph{width:60px;height:60px;border-radius:16px;background:var(--soft);display:grid;place-items:center;font-size:2rem;flex:none}
+.ph{position:relative;overflow:hidden;width:78px;height:78px;border-radius:16px;background:var(--soft);display:grid;place-items:center;font-size:2.2rem;flex:none}.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .info{flex:1;min-width:0}.info h3{font-size:1rem;line-height:1.25}
 .info p{color:var(--mute);font-size:.85rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .price{display:block;margin-top:2px;font-weight:700;color:var(--accent)}
@@ -98,6 +98,9 @@ const DEMO=[
 let MENU=[],F='all';const cart={};
 const $=id=>document.getElementById(id);
 const money=n=>Number(n).toLocaleString('vi-VN')+'đ';
+function imgUrl(u){u=String(u||'').trim();if(!u)return '';
+ if(/drive\.google\.com/.test(u)){const m=u.match(/\/d\/([\w-]+)/)||u.match(/[?&]id=([\w-]+)/);if(m)return 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w400'}
+ return u}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function load(){
  try{const r=await fetch(API_URL);MENU=await r.json();if(!Array.isArray(MENU))throw 0}
@@ -110,7 +113,7 @@ function draw(){
  const show=F==='all'?shops:[F];
  $('shops').innerHTML=show.map(s=>{const it=MENU.filter(m=>m.shop===s);
   return `<section class="shop"><div class="shophead"><div class="av" aria-hidden="true">${esc(it[0].emoji)}</div><div><h2>${esc(s)}</h2><small>${it.length} món</small></div></div>${it.map(m=>{const q=cart[m.id]||0;
-  return `<div class="dish"><div class="ph" aria-hidden="true">${esc(m.emoji)}</div><div class="info"><h3>${esc(m.name)}</h3><p>${esc(m.desc)}</p><span class="price">${money(m.price)}</span></div>${q?`<div class="step"><button data-m="${m.id}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${m.id}" aria-label="Tăng">+</button></div>`:`<button class="add" data-a="${m.id}" aria-label="Thêm ${esc(m.name)}">+</button>`}</div>`}).join('')}</section>`}).join('')||'<p class="empty">Chưa có món nào.</p>';
+  return `<div class="dish"><div class="ph">${esc(m.emoji)}${imgUrl(m.img)?`<img src="${esc(imgUrl(m.img))}" alt="${esc(m.name)}" loading="lazy" onerror="this.remove()">`:''}</div><div class="info"><h3>${esc(m.name)}</h3><p>${esc(m.desc)}</p><span class="price">${money(m.price)}</span></div>${q?`<div class="step"><button data-m="${m.id}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${m.id}" aria-label="Tăng">+</button></div>`:`<button class="add" data-a="${m.id}" aria-label="Thêm ${esc(m.name)}">+</button>`}</div>`}).join('')}</section>`}).join('')||'<p class="empty">Chưa có món nào.</p>';
 }
 function drawCart(){
  let t=0,c=0;const ids=Object.keys(cart);
