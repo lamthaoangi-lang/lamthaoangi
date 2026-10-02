@@ -1,78 +1,286 @@
-<!DOCTYPE html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>Quản trị – Lâm Thao Ăn Gì</title>
-<style>
-:root{--bg:#eef5ef;--card:#fff;--ink:#17261d;--mute:#5f7266;--brand:#14532d;--line:#cfe0d4;--red:#d7263d}
-*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,'Segoe UI',sans-serif;padding-bottom:70px}
-.w{max-width:720px;margin:0 auto;padding:10px}
-h1{font-size:1.2rem;color:var(--brand);padding:8px 0}
-nav{position:sticky;top:0;z-index:3;background:var(--bg);display:flex;gap:6px;padding:8px 10px;overflow-x:auto}
-nav button{flex:none;padding:10px 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;font:inherit;cursor:pointer}
-nav button.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
-.c{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px;margin-bottom:12px}
-.hd{display:flex;align-items:center;gap:10px;margin-bottom:8px}.th{width:44px;height:44px;border-radius:12px;background:#e3f1e7;display:grid;place-items:center;overflow:hidden;font-size:1.5rem;flex:none}.th img{width:100%;height:100%;object-fit:cover}
-label{display:block;font-size:.8rem;color:var(--mute);margin:8px 0 3px}
-input:not([type=checkbox]),select,textarea{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:10px;font:inherit;background:#fff}
-.g{display:flex;gap:8px;margin-top:6px}.g>input{flex:1}.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-button{font:inherit;cursor:pointer;padding:10px 14px;border-radius:10px;border:1.5px solid var(--brand);background:#fff;color:var(--brand);font-weight:600}
-button.p{background:var(--brand);color:#fff}button.d{border-color:var(--red);color:var(--red)}
-.ck{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:.95rem}
-pre{white-space:pre-wrap;font:inherit;background:#f4f8f5;border-radius:10px;padding:8px;margin:6px 0}
-.tag{display:inline-block;padding:2px 10px;border-radius:99px;background:#e3f1e7;font-size:.8rem}
-#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#17261d;color:#fff;padding:12px 18px;border-radius:12px;display:none;z-index:9;max-width:90%}
-.login{max-width:340px;margin:18vh auto;text-align:center}
-</style></head><body>
-<div class="w"><h1>🛠️ Quản trị Lâm Thao Ăn Gì</h1></div>
-<nav id="nav" hidden><button data-v="shops">🏪 Quán</button><button data-v="items">🍜 Món</button><button data-v="orders">📦 Đơn</button><button data-v="rates">⭐ Đánh giá</button><button data-reload>↻</button></nav>
-<div class="w" id="main"><div class="login c"><b>Nhập mật khẩu quản trị</b><div class="g"><input id="pw" type="password" autocomplete="current-password"><button class="p" id="go">Vào</button></div></div></div>
-<div id="toast"></div>
-<script>
-const API='https://script.google.com/macros/s/AKfycbwyheCMFxZJvm-lgD4Zm4ggdj8m984nfakQ1cIgEHGdLal1JfRh5HFS0knEpCz3dDlq/exec';
-const $=i=>document.getElementById(i);let D=null,PASS='',V='shops',CUR='';
-try{PASS=sessionStorage.getItem('ap')||''}catch(e){}
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=n=>Number(n||0).toLocaleString('vi-VN')+'đ';
-function imgUrl(u){u=String(u||'').trim();const m=u.match(/drive\.google\.com.*?(?:\/d\/|[?&]id=)([\w-]+)/);return m?'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w200':u}
-const thumb=(u,e)=>`<span class="th">${u?`<img src="${esc(imgUrl(u))}" alt="" onerror="this.remove()">`:e||'🏪'}</span>`;
-function toast(t){const x=$('toast');x.textContent=t;x.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>x.style.display='none',2800)}
-async function call(o){o.admin=1;o.pass=PASS;try{return await (await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)})).json()}catch(e){return{ok:false,msg:'Lỗi mạng hoặc chưa triển khai phiên bản mới của Apps Script.'}}}
-async function load(){const r=await call({act:'load'});if(!r.ok){toast(r.msg||'Lỗi');if(!D){PASS='';$('nav').hidden=true}return false}
- D=r;if(!CUR||!D.shops.some(s=>s.name===CUR))CUR=D.shops[0]?D.shops[0].name:'';$('nav').hidden=false;render();return true}
-$('go').onclick=async()=>{PASS=$('pw').value;if(await load())try{sessionStorage.setItem('ap',PASS)}catch(e){}};
-$('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
-function pick(cb,max){const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{if(!f.files[0])return;const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82).split(',')[1])};im.src=URL.createObjectURL(f.files[0])};f.click()}
-const get=c=>{const o={};c.querySelectorAll('[data-f]').forEach(i=>o[i.dataset.f]=i.type==='checkbox'?i.checked:i.value.trim());return o};
-const shopRow=(s,i)=>`<div class="c" data-t="shop"><div class="hd">${thumb(s.logo)}<div><b>${esc(s.name)}</b><br><small>${s.items.length} món${s.show?'':' · ĐANG ẨN'}</small></div></div>
-<label>Logo quán (dán link hoặc bấm Tải ảnh)</label><div class="g"><input data-f="logo" value="${esc(s.logo)}"><button data-up="logo">Tải ảnh</button></div>
-<label>Mô tả ngắn: quán bán gì (VD: Trà sữa · Cà phê · Ăn vặt)</label><input data-f="desc" value="${esc(s.desc)}">
-<label class="ck"><input type="checkbox" data-f="show" ${s.show?'checked':''}> Hiện quán trên web</label>
-<div class="g"><button class="p" data-saveshop="${i}">Lưu quán</button><button data-menu="${i}">Sửa món ›</button></div></div>`;
-const itemRow=it=>`<div class="c" data-t="item" data-row="${it.row||0}"><div class="hd">${thumb(it.img,esc(it.emoji)||'🍽️')}<b>${it.row?esc(it.name):'➕ Thêm món mới'}</b></div>
-<input data-f="name" placeholder="Tên món" value="${esc(it.name)}"><div class="g2" style="margin-top:6px"><input data-f="price" inputmode="numeric" placeholder="Giá (VD 25000)" value="${esc(it.price)}"><input data-f="emoji" placeholder="Emoji" value="${esc(it.emoji)}"></div>
-<input data-f="desc" placeholder="Mô tả món" style="margin-top:6px" value="${esc(it.desc)}">
-<div class="g"><input data-f="img" placeholder="Link ảnh món" value="${esc(it.img)}"><button data-up="img">Tải ảnh</button></div>
-<label class="ck"><input type="checkbox" data-f="show" ${it.show!==false?'checked':''}> Hiện món</label>
-<div class="g"><button class="p" data-saveitem>Lưu món</button>${it.row?'<button class="d" data-del>Xóa</button>':''}</div></div>`;
-function render(){document.querySelectorAll('#nav [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===V));let h='';
- if(V==='shops')h=`<div class="c"><b>➕ Thêm quán mới</b><div class="g"><input id="nn" placeholder="Tên quán"><button class="p" data-addshop>Thêm</button></div></div>`+D.shops.map(shopRow).join('');
- else if(V==='items'){const s=D.shops.find(x=>x.name===CUR);h=`<div class="c"><label style="margin:0">Chọn quán</label><select id="sel">${D.shops.map(x=>`<option ${x.name===CUR?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>`+(s?itemRow({row:0,name:'',price:'',desc:'',emoji:'',img:''})+s.items.map(itemRow).join(''):'<p>Chưa có quán.</p>')}
- else if(V==='orders')h=`<p style="margin:4px 0 10px;color:var(--mute)">Chuyển sang <b>Đã giao</b> thì khách mới đánh giá được quán.</p>`+(D.orders.map(o=>`<div class="c"><b>${esc(o.code)}</b> <small>${esc(o.time)}</small><br>${esc(o.name)} · <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a><br><small>${esc(o.addr)}</small><pre>${esc(o.detail)}</pre><b>${money(o.total)}</b> · ${esc(o.pay)}<div class="g"><select data-st="${o.row}">${['Mới','Đã báo quán','Đang giao','Đã giao','Hủy'].map(x=>`<option ${x===o.status?'selected':''}>${x}</option>`).join('')}${['Mới','Đã báo quán','Đang giao','Đã giao','Hủy'].includes(o.status)?'':`<option selected>${esc(o.status)}</option>`}</select></div></div>`).join('')||'<p>Chưa có đơn.</p>');
- else h=D.ratings.map(r=>`<div class="c"><b>${esc(r.shop)}</b> <span class="tag">${'★'.repeat(r.star)}${'☆'.repeat(5-r.star)}</span><br>${esc(r.cmt)||'<i>(không nhận xét)</i>'}<br><small>${esc(r.name)} · ${esc(r.code)} · ${esc(r.time)}</small></div>`).join('')||'<p>Chưa có đánh giá.</p>';
- $('main').innerHTML=h}
-document.addEventListener('change',async e=>{const t=e.target;
- if(t.id==='sel'){CUR=t.value;render()}
- if(t.dataset.st){const r=await call({act:'setStatus',row:+t.dataset.st,status:t.value});toast(r.ok?'Đã cập nhật trạng thái':r.msg)}});
-document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset,c=b.closest('[data-t]');
- if(d.v){V=d.v;render();return}
- if(d.reload!==undefined){await load();toast('Đã tải lại');return}
- if(d.menu!==undefined){CUR=D.shops[+d.menu].name;V='items';render();scrollTo(0,0);return}
- if(d.up){const i=c.querySelector('[data-f='+d.up+']');pick(async x=>{toast('Đang tải ảnh…');const r=await call({act:'upload',data:x});if(r.ok){i.value=r.url;toast('Đã tải ảnh. Nhớ bấm Lưu.')}else toast(r.msg)},d.up==='logo'?300:700);return}
- let r;
- if(d.addshop!==undefined){const n=$('nn').value.trim();if(!n)return toast('Nhập tên quán');r=await call({act:'saveShop',name:n,show:true})}
- else if(d.saveshop!==undefined)r=await call({act:'saveShop',name:D.shops[+d.saveshop].name,...get(c)});
- else if(d.saveitem!==undefined)r=await call({act:'saveItem',shop:CUR,row:+c.dataset.row,...get(c)});
- else if(d.del!==undefined){if(!confirm('Xóa món này?'))return;r=await call({act:'delItem',shop:CUR,row:+c.dataset.row})}
- else return;
- if(r.ok){toast('Đã lưu ✓');await load()}else toast(r.msg||'Lỗi')});
-if(PASS)load();
-</script></body></html>
+// Dán toàn bộ đoạn này vào Google Sheet: Tiện ích mở rộng > Apps Script, rồi Triển khai > Quản lý bản triển khai > Sửa > Phiên bản mới.
+// MỖI QUÁN = 1 TAB có tên kết thúc bằng ".Q", ví dụ "Trà sữa Mộc.Q"  (tên hiện trên web là "Trà sữa Mộc").
+// Cột trong tab quán: A Món | B Giá | C Mô tả | D Emoji | E Hiện (gõ "không" để ẩn món) | F Ảnh
+// Tab "Quán" (tùy chọn, A-D: Tên quán | Logo | Mô tả | Hiện) dùng để thêm logo/mô tả, hoặc gõ "không" ở cột Hiện để ẩn cả quán.
+// Muốn ẩn quán: gõ "không" ở tab Quán, hoặc đổi tên tab bỏ đuôi .Q. Muốn xóa hẳn: xóa tab.
+// Tab "Đơn hàng", "Đánh giá" tự tạo. Tab "Thực đơn" cũ (nếu còn) vẫn đọc bình thường.
+
+const OWNER_EMAIL = 'lamthaoangi@gmail.com'; // email nhận đơn
+const ADMIN_PASS = 'DOI-MAT-KHAU-NAY'; // mật khẩu vào trang ADMIN.html - HÃY ĐỔI
+const COLORS = ['#14532d', '#1d4ed8', '#b45309', '#9d174d', '#6d28d9', '#0f766e'];
+const ORDER_HEAD = ['Thời gian', 'Khách', 'SĐT', 'Địa chỉ', 'Ghi chú', 'Chi tiết', 'Tổng', 'Trạng thái', 'Vị trí (Google Maps)', 'Mã đơn', 'Phí giao', 'Thanh toán'];
+const RATE_HEAD = ['Thời gian', 'Mã đơn', 'Quán', 'Số sao', 'Nhận xét', 'Khách'];
+
+function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+function h_(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function vnd_(n) { return Number(n).toLocaleString('vi-VN') + 'đ'; }
+
+// ---------- Đọc dữ liệu ----------
+function readMenu_() {
+  const ss = SpreadsheetApp.getActive(), out = [];
+  ss.getSheets().filter(s => /\.q$/i.test(s.getName().trim())).forEach(sh => {
+    const shop = sh.getName().trim().replace(/\.q$/i, '').trim();
+    sh.getDataRange().getValues().slice(1).forEach(r => {
+      if (!r[0]) return;
+      out.push({ shop: shop, name: String(r[0]).trim(), price: Number(r[1]) || 0, desc: r[2] || '', emoji: r[3] || '🍽️', hide: String(r[4]).trim().toLowerCase() === 'không', img: r[5] || '' });
+    });
+  });
+  const old = ss.getSheetByName('Thực đơn'); // tương thích tab cũ
+  if (old) old.getDataRange().getValues().slice(1).forEach(r => {
+    if (!r[0] || !r[1]) return;
+    out.push({ shop: String(r[0]).trim(), name: String(r[1]).trim(), price: Number(r[2]) || 0, desc: r[3] || '', emoji: r[4] || '🍽️', hide: String(r[5]).trim().toLowerCase() === 'không', img: r[6] || '' });
+  });
+  return out;
+}
+
+function readRatings_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName('Đánh giá'), res = {};
+  if (!sh) return res;
+  sh.getDataRange().getValues().slice(1).forEach(r => {
+    const s = Number(r[3]); if (!r[2] || !s) return;
+    const x = res[r[2]] = res[r[2]] || { sum: 0, n: 0 }; x.sum += s; x.n++;
+  });
+  return res;
+}
+
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  if (p.rate) return json_(rate_(p));
+  if (p.track) return json_(track_(p));
+  const qSh = SpreadsheetApp.getActive().getSheetByName('Quán');
+  const qRows = qSh ? qSh.getDataRange().getValues().slice(1).filter(r => r[0]) : [];
+  const info = {}, hidden = [];
+  qRows.forEach(r => {
+    const n = String(r[0]).trim();
+    if (String(r[3]).trim().toLowerCase() === 'không') hidden.push(n);
+    info[n] = { logo: r[1] || '', desc: r[2] || '' };
+  });
+  const menu = readMenu_().filter(m => !m.hide && !hidden.includes(m.shop));
+  const rt = readRatings_(), names = [];
+  menu.forEach(m => { if (!names.includes(m.shop)) names.push(m.shop); });
+  const shops = names.map(n => {
+    const i = info[n] || {}, r = rt[n];
+    return { name: n, logo: i.logo || '', desc: i.desc || '', avg: r ? Math.round(r.sum / r.n * 10) / 10 : 0, cnt: r ? r.n : 0 };
+  });
+  return json_({ cfg: cfg_(), shops: shops, menu: menu.map(m => ({ shop: m.shop, name: m.name, price: m.price, desc: m.desc, emoji: m.emoji, img: m.img })) });
+}
+
+// ---------- Cài đặt (tab "Cài đặt": cột A khóa, cột B giá trị; sửa trong ADMIN) ----------
+function cfg_() {
+  const s = SpreadsheetApp.getActive().getSheetByName('Cài đặt'), c = { banner: '', open: 7, close: 21, min: 30000, pause: false };
+  if (s) s.getDataRange().getValues().slice(1).forEach(r => {
+    const k = String(r[0]).trim(), v = r[1];
+    if (k === 'banner') c.banner = String(v || '');
+    else if (k === 'pause') c.pause = String(v).trim().toLowerCase() === 'có';
+    else if (k in c && String(v) !== '') c[k] = Number(v) || 0;
+  });
+  return c;
+}
+
+// ---------- Khách tra cứu đơn (cần mã đơn + SĐT) ----------
+function track_(p) {
+  const code = String(p.code || '').trim().toUpperCase(), ph = String(p.phone || '').replace(/\D/g, '').slice(-9);
+  const od = SpreadsheetApp.getActive().getSheetByName('Đơn hàng');
+  const row = od && code && ph.length >= 9 ? od.getDataRange().getValues().slice(1).find(r => String(r[9]).trim().toUpperCase() === code && String(r[2]).replace(/\D/g, '').slice(-9) === ph) : null;
+  if (!row) return { ok: false, msg: 'Không tìm thấy đơn. Hãy kiểm tra mã đơn và số điện thoại.' };
+  return { ok: true, code: code, status: String(row[7]), total: row[6], detail: row[5], pay: row[11] };
+}
+
+// ---------- Đánh giá quán ----------
+function rate_(p) {
+  const code = String(p.code || '').trim().toUpperCase(), shop = String(p.shop || '').trim(), star = parseInt(p.star) || 0;
+  if (!code || !shop || star < 1 || star > 5) return { ok: false, msg: 'Thiếu mã đơn hoặc chưa chọn số sao.' };
+  const ss = SpreadsheetApp.getActive(), od = ss.getSheetByName('Đơn hàng');
+  if (!od) return { ok: false, msg: 'Mã đơn không đúng.' };
+  const row = od.getDataRange().getValues().slice(1).find(r => String(r[9]).trim().toUpperCase() === code);
+  if (!row || String(row[5]).indexOf(shop) < 0) return { ok: false, msg: 'Mã đơn không đúng hoặc đơn này không có quán đó.' };
+  if (String(row[7]).trim() !== 'Đã giao') return { ok: false, msg: 'Đơn này chưa được giao nên chưa đánh giá được. Bạn quay lại sau khi nhận hàng nhé.' };
+  let sh = ss.getSheetByName('Đánh giá');
+  if (!sh) { sh = ss.insertSheet('Đánh giá'); sh.appendRow(RATE_HEAD); }
+  const dup = sh.getDataRange().getValues().slice(1).some(r => String(r[1]).toUpperCase() === code && r[2] === shop);
+  if (dup) return { ok: false, msg: 'Bạn đã đánh giá quán này cho đơn này rồi.' };
+  sh.appendRow([new Date(), code, shop, star, String(p.cmt || '').slice(0, 300), row[1]]);
+  return { ok: true };
+}
+
+// ---------- Nhận đơn ----------
+function doPost(e) {
+  const o = JSON.parse(e.postData.contents);
+  if (o.admin) return json_(admin_(o));
+  const phone = String(o.phone || '').replace(/\D/g, '');
+
+  // Chặn gửi trùng/đơn rác: mỗi số điện thoại 1 đơn mỗi 60 giây
+  const cache = CacheService.getScriptCache();
+  if (cache.get('o' + phone)) return ContentService.createTextOutput('dup');
+  cache.put('o' + phone, '1', 60);
+
+  // Tự tính lại tiền theo giá trong Sheet, không tin giá do trình duyệt gửi lên
+  const price = {};
+  readMenu_().forEach(m => { price[m.shop + '|' + m.name] = m.price; });
+  const by = {};
+  let total = 0;
+  (o.items || []).forEach(i => {
+    const p = price[i.shop + '|' + i.name];
+    const q = Math.min(Math.max(parseInt(i.qty) || 0, 0), 50);
+    if (p === undefined || !q) return;
+    total += p * q;
+    (by[i.shop] = by[i.shop] || []).push({ name: i.name, q: q, p: p });
+  });
+  if (!total) return ContentService.createTextOutput('empty');
+  const shopNames = Object.keys(by);
+  // Chi tiết ghi vào Sheet: tách riêng từng quán
+  const detail = shopNames.map(s => '🏪 ' + s + '\n' + by[s].map(i => '   • ' + i.q + ' x ' + i.name).join('\n')).join('\n\n');
+  const ship = o.ship || 'Thỏa thuận';
+
+  // ----- Email dễ nhìn: mỗi quán 1 khối màu riêng -----
+  const blocks = shopNames.map((s, k) => {
+    const c = COLORS[k % COLORS.length];
+    let sub = 0;
+    const rows = by[s].map(i => {
+      sub += i.p * i.q;
+      return '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:18px;font-weight:bold;color:' + c + ';width:48px">' + i.q + '×</td>' +
+        '<td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:16px">' + h_(i.name) + '</td>' +
+        '<td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;color:#555;white-space:nowrap">' + vnd_(i.p * i.q) + '</td></tr>';
+    }).join('');
+    return '<div style="border:2px solid ' + c + ';border-radius:12px;margin:14px 0;overflow:hidden">' +
+      '<div style="background:' + c + ';color:#fff;padding:10px 14px;font-size:17px;font-weight:bold">🏪 QUÁN ' + (k + 1) + ': ' + h_(s) + '</div>' +
+      '<table style="width:100%;border-collapse:collapse">' + rows + '</table>' +
+      '<div style="padding:8px 14px;text-align:right;background:#f7f7f7;font-weight:bold">Tiền quán này: ' + vnd_(sub) + '</div></div>';
+  }).join('');
+  const mapLink = o.map ? '<a href="' + h_(o.map) + '" style="color:#1d4ed8;font-weight:bold">📍 Mở Google Maps</a>' : 'Khách không chia sẻ';
+  const html = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:auto;color:#17261d">' +
+    '<div style="background:#14532d;color:#fff;padding:16px;border-radius:12px"><div style="font-size:13px;opacity:.85">ĐƠN MỚI · ' + shopNames.length + ' quán</div>' +
+    '<div style="font-size:24px;font-weight:bold">' + h_(o.code) + '</div><div style="font-size:18px;margin-top:4px">' + vnd_(total) + ' · ' + h_(o.pay) + '</div></div>' +
+    '<table style="width:100%;margin-top:12px;font-size:15px;border-collapse:collapse">' +
+    '<tr><td style="padding:4px 0;color:#666;width:90px">Khách</td><td><b>' + h_(o.name) + '</b></td></tr>' +
+    '<tr><td style="padding:4px 0;color:#666">SĐT</td><td><a href="tel:' + h_(o.phone) + '" style="color:#1d4ed8;font-weight:bold">' + h_(o.phone) + '</a></td></tr>' +
+    '<tr><td style="padding:4px 0;color:#666">Địa chỉ</td><td>' + h_(o.addr) + '</td></tr>' +
+    '<tr><td style="padding:4px 0;color:#666">Vị trí</td><td>' + mapLink + '</td></tr>' +
+    '<tr><td style="padding:4px 0;color:#666">Ghi chú</td><td>' + (h_(o.note) || '—') + '</td></tr>' +
+    '<tr><td style="padding:4px 0;color:#666">Phí giao</td><td>' + h_(ship) + '</td></tr></table>' +
+    blocks +
+    '<div style="background:#fff4e5;border-radius:10px;padding:12px 14px;font-size:18px;text-align:right"><b>TỔNG TIỀN MÓN: ' + vnd_(total) + '</b></div></div>';
+  const text = 'Mã đơn: ' + o.code + '\nThanh toán: ' + o.pay + '\nPhí giao: ' + ship +
+    '\nKhách: ' + o.name + '\nSĐT: ' + o.phone + '\nĐịa chỉ: ' + o.addr +
+    '\nGhi chú: ' + o.note + '\nVị trí: ' + (o.map || 'Khách không chia sẻ') +
+    '\n\nChi tiết theo quán:\n' + detail + '\n\nTiền món: ' + total + 'đ';
+
+  let status = 'Mới';
+  try {
+    MailApp.sendEmail({
+      to: OWNER_EMAIL,
+      subject: '🛒 Đơn ' + (o.code || '') + ' · ' + shopNames.join(' + ') + ' · ' + o.name + ' · ' + vnd_(total),
+      body: text,
+      htmlBody: html
+    });
+  } catch (err) {
+    status = 'Mới - LỖI EMAIL: ' + err.message;
+  }
+
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName('Đơn hàng');
+  if (!sh) { sh = ss.insertSheet('Đơn hàng'); sh.appendRow(ORDER_HEAD); }
+  sh.appendRow([new Date(), o.name, "'" + o.phone, o.addr, o.note, detail, total, status, o.map || '', o.code || '', ship, o.pay || '']);
+  return ContentService.createTextOutput('ok');
+}
+
+// ---------- Trang quản trị (ADMIN.html) ----------
+function admin_(o) {
+  if (o.pass !== ADMIN_PASS) return { ok: false, msg: 'Sai mật khẩu.' };
+  const ss = SpreadsheetApp.getActive(), tab = n => ss.getSheetByName(n + '.Q'), tz = 'Asia/Ho_Chi_Minh';
+  const fmt = d => { try { return Utilities.formatDate(new Date(d), tz, 'dd/MM HH:mm'); } catch (e) { return ''; } };
+  const HEAD = [['Món', 'Giá', 'Mô tả', 'Emoji', 'Hiện', 'Ảnh']];
+  if (o.act === 'load') {
+    const q = ss.getSheetByName('Quán'), info = {};
+    if (q) q.getDataRange().getValues().slice(1).forEach(r => { if (r[0]) info[String(r[0]).trim()] = { logo: r[1] || '', desc: r[2] || '', show: String(r[3]).trim().toLowerCase() !== 'không' }; });
+    const shops = ss.getSheets().filter(s => /\.q$/i.test(s.getName().trim())).map(sh => {
+      const n = sh.getName().trim().replace(/\.q$/i, '').trim(), i = info[n] || { logo: '', desc: '', show: true }, items = [];
+      sh.getDataRange().getValues().forEach((r, k) => { if (k && r[0]) items.push({ row: k + 1, name: r[0], price: r[1], desc: r[2], emoji: r[3], show: String(r[4]).trim().toLowerCase() !== 'không', img: r[5] || '' }); });
+      return { name: n, logo: i.logo, desc: i.desc, show: i.show, items: items };
+    });
+    const last = (sh, f) => { const out = []; if (!sh) return out; const v = sh.getDataRange().getValues(); for (let k = v.length - 1; k >= 1 && out.length < 80; k--) out.push(f(v[k], k + 1)); return out; };
+    return {
+      ok: true, shops: shops, cfg: cfg_(),
+      orders: last(ss.getSheetByName('Đơn hàng'), (r, row) => ({ row: row, time: fmt(r[0]), name: r[1], phone: String(r[2]).replace(/^'/, ''), addr: r[3], detail: r[5], total: r[6], status: r[7], code: r[9], pay: r[11] })),
+      ratings: last(ss.getSheetByName('Đánh giá'), r => ({ time: fmt(r[0]), code: r[1], shop: r[2], star: Number(r[3]) || 0, cmt: r[4], name: r[5] }))
+    };
+  }
+  if (o.act === 'saveShop') {
+    const n = String(o.name || '').trim().replace(/\.q$/i, '');
+    if (!n) return { ok: false, msg: 'Thiếu tên quán.' };
+    if (!tab(n)) ss.insertSheet(n + '.Q').getRange(1, 1, 1, 6).setValues(HEAD).setFontWeight('bold');
+    const q = ss.getSheetByName('Quán') || ss.insertSheet('Quán');
+    if (!q.getLastRow()) q.appendRow(['Tên quán', 'Logo', 'Mô tả', 'Hiện']);
+    const k = q.getDataRange().getValues().findIndex((r, i) => i && String(r[0]).trim() === n);
+    const row = [n, o.logo || '', o.desc || '', o.show === false ? 'không' : 'có'];
+    if (k < 0) q.appendRow(row); else q.getRange(k + 1, 1, 1, 4).setValues([row]);
+    return { ok: true };
+  }
+  if (o.act === 'saveItem' || o.act === 'delItem') {
+    const t = tab(String(o.shop || ''));
+    if (!t) return { ok: false, msg: 'Không thấy tab quán.' };
+    if (o.act === 'delItem') { if (o.row > 1) t.deleteRow(o.row); return { ok: true }; }
+    if (!String(o.name || '').trim()) return { ok: false, msg: 'Thiếu tên món.' };
+    const row = [String(o.name).trim(), Number(o.price) || 0, o.desc || '', o.emoji || '', o.show === false ? 'không' : '', o.img || ''];
+    if (o.row > 1) t.getRange(o.row, 1, 1, 6).setValues([row]); else t.appendRow(row);
+    return { ok: true };
+  }
+  if (o.act === 'setStatus') {
+    const od = ss.getSheetByName('Đơn hàng');
+    if (!od || !(o.row > 1)) return { ok: false, msg: 'Không thấy đơn.' };
+    od.getRange(o.row, 8).setValue(String(o.status || ''));
+    return { ok: true };
+  }
+  if (o.act === 'saveCfg') {
+    const s = ss.getSheetByName('Cài đặt') || ss.insertSheet('Cài đặt');
+    s.clear();
+    s.getRange(1, 1, 6, 2).setValues([['Khóa', 'Giá trị'], ['banner', o.banner || ''], ['open', Number(o.open) || 0], ['close', Number(o.close) || 0], ['min', Number(o.min) || 0], ['pause', o.pause ? 'có' : '']]);
+    return { ok: true };
+  }
+  if (o.act === 'upload') { // tải ảnh logo/món lên Drive, trả về link
+    const it = DriveApp.getFoldersByName('LamThao-Anh'), f = it.hasNext() ? it.next() : DriveApp.createFolder('LamThao-Anh');
+    const file = f.createFile(Utilities.newBlob(Utilities.base64Decode(o.data), 'image/jpeg', 'a' + Date.now() + '.jpg'));
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return { ok: true, url: 'https://drive.google.com/file/d/' + file.getId() + '/view' };
+  }
+  return { ok: false, msg: 'Lệnh không hợp lệ.' };
+}
+
+// ---------- Menu điều khiển trong Sheet ----------
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('Lâm Thao')
+    .addItem('➕ Thêm quán mới', 'themQuanMoi')
+    .addItem('⚙️ Thiết lập lần đầu', 'thietLapSheet')
+    .addToUi();
+}
+
+// Bấm menu "Lâm Thao > Thêm quán mới", nhập tên quán -> tự tạo tab "Tên.Q" có sẵn tiêu đề cột.
+function themQuanMoi() {
+  const ui = SpreadsheetApp.getUi();
+  const r = ui.prompt('Thêm quán mới', 'Nhập tên quán (không cần gõ .Q):', ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  const name = r.getResponseText().trim().replace(/\.q$/i, '');
+  if (!name) return;
+  const ss = SpreadsheetApp.getActive(), tab = name + '.Q';
+  if (ss.getSheetByName(tab)) { ui.alert('Đã có quán này rồi.'); return; }
+  const sh = ss.insertSheet(tab);
+  sh.getRange(1, 1, 1, 6).setValues([['Món', 'Giá', 'Mô tả', 'Emoji', 'Hiện', 'Ảnh']]).setFontWeight('bold');
+  sh.setFrozenRows(1);
+  ui.alert('Đã tạo tab "' + tab + '". Nhập món vào đó là web tự hiện quán mới.');
+}
+
+// Chạy hàm này một lần để cấp quyền gửi email và thử gửi.
+function kiemTraEmail() {
+  MailApp.sendEmail(OWNER_EMAIL, 'Thử gửi email từ Lâm Thao Ăn Gì', 'Nếu bạn đọc được email này, hệ thống gửi mail đã hoạt động.');
+}
+
+// Chạy một lần: tạo tab Quán, Đơn hàng, Đánh giá và danh sách chọn cho cột Trạng thái.
+function thietLapSheet() {
+  const ss = SpreadsheetApp.getActive();
+  if (!ss.getSheetByName('Quán')) ss.insertSheet('Quán').appendRow(['Tên quán', 'Logo', 'Mô tả', 'Hiện']);
+  if (!ss.getSheetByName('Đánh giá')) ss.insertSheet('Đánh giá').appendRow(RATE_HEAD);
+  const sh = ss.getSheetByName('Đơn hàng') || ss.insertSheet('Đơn hàng');
+  sh.getRange(1, 1, 1, 12).setValues([ORDER_HEAD]);
+  sh.getRange('H2:H1000').setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Mới', 'Đã báo quán', 'Đang giao', 'Đã giao', 'Hủy'], true).build());
+}
