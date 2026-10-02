@@ -56,6 +56,8 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 input,textarea{width:100%;min-height:48px;padding:11px 12px;margin-bottom:8px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit}
 .order{width:100%;min-height:50px;border-radius:14px;background:var(--accent);color:#fff;font-weight:700}
 .order:disabled{opacity:.6}
+.loc{width:100%;min-height:48px;border:1.5px solid var(--brand);border-radius:12px;color:var(--brand);font-weight:700;margin-bottom:6px}
+.locmsg{font-size:.9rem;color:var(--mute);margin-bottom:10px;min-height:1.2em}
 .msg{margin-top:8px;padding:12px;border-radius:12px;background:var(--soft)}
 @media(prefers-reduced-motion:reduce){.sheet,.bk{transition:none}}
 </style>
@@ -84,6 +86,8 @@ input,textarea{width:100%;min-height:48px;padding:11px 12px;margin-bottom:8px;bo
 <input id="phone" placeholder="Số điện thoại" inputmode="tel" autocomplete="tel">
 <textarea id="addr" rows="2" placeholder="Địa chỉ nhận hàng"></textarea>
 <input id="note" placeholder="Ghi chú (không bắt buộc)">
+<button class="loc" id="loc" type="button">📍 Chia sẻ vị trí giao hàng (bắt buộc)</button>
+<div class="locmsg" id="locmsg" aria-live="polite">Bắt buộc: cho phép lấy vị trí để shipper tìm đúng nhà bạn.</div>
 <button class="order" id="order">Đặt hàng</button>
 <div class="msg" id="msg" hidden></div>
 </aside>
@@ -95,7 +99,7 @@ const DEMO=[
 {shop:'Phở Bà Tư',name:'Phở gà',price:50000,desc:'Gà ta xé phay, hành chần.',emoji:'🍲'},
 {shop:'Trà Sữa Nắng',name:'Trà sữa trân châu',price:35000,desc:'Trân châu nấu mỗi ngày.',emoji:'🧋'},
 {shop:'Trà Sữa Nắng',name:'Nước cam ép',price:30000,desc:'Cam vắt nguyên chất.',emoji:'🍊'}];
-let MENU=[],F='all';const cart={};
+let MENU=[],F='all',MAP='';const cart={};
 const $=id=>document.getElementById(id);
 const money=n=>Number(n).toLocaleString('vi-VN')+'đ';
 function imgUrl(u){u=String(u||'').trim();if(!u)return '';
@@ -128,18 +132,31 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(d.m!==undefined){if(--cart[d.m]<=0)delete cart[d.m];draw();drawCart()}
 });
 $('fab').onclick=()=>sheet(true);$('close').onclick=$('bk').onclick=()=>sheet(false);
+const LOCTXT='Bắt buộc: cho phép lấy vị trí để shipper tìm đúng nhà bạn.';
+function getLoc(){return new Promise(ok=>{
+ const lm=$('locmsg');
+ if(!navigator.geolocation){lm.textContent='Trình duyệt này chưa hỗ trợ lấy vị trí. Hãy mở trang bằng Chrome hoặc Safari.';return ok(false)}
+ lm.textContent='Đang lấy vị trí…';
+ navigator.geolocation.getCurrentPosition(p=>{
+  MAP='https://www.google.com/maps?q='+p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6);
+  lm.textContent='✓ Đã lấy vị trí (sai số khoảng '+Math.round(p.coords.accuracy)+' m).';ok(true);
+ },()=>{MAP='';lm.textContent='Chưa có vị trí nên chưa thể đặt hàng. Hãy cho phép truy cập vị trí trong cài đặt trình duyệt rồi bấm lại nút này.';ok(false)},
+ {enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+})}
+$('loc').onclick=getLoc;
 $('order').onclick=async()=>{
  const m=$('msg'),ids=Object.keys(cart);m.hidden=false;
  if(!ids.length){m.textContent='Hãy thêm ít nhất một món vào giỏ trước khi đặt.';return}
  const name=$('name').value.trim(),phone=$('phone').value.trim(),addr=$('addr').value.trim();
  if(!name||!phone||!addr){m.textContent='Vui lòng điền đủ họ tên, số điện thoại và địa chỉ.';return}
+ if(!MAP&&!(await getLoc())){m.textContent='Bạn cần cho phép chia sẻ vị trí để đặt hàng.';return}
  const items=ids.map(i=>({shop:MENU[i].shop,name:MENU[i].name,qty:cart[i],price:MENU[i].price}));
  const total=items.reduce((s,x)=>s+x.price*x.qty,0);
  $('order').disabled=true;m.textContent='Đang gửi đơn…';
  try{
-  await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({name,phone,addr,note:$('note').value.trim(),items,total})});
+  await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({name,phone,addr,note:$('note').value.trim(),map:MAP,items,total})});
   m.textContent='Cảm ơn '+name+'! Đơn đã được ghi nhận, chúng tôi sẽ gọi xác nhận sớm.';
-  for(const k in cart)delete cart[k];draw();drawCart();
+  for(const k in cart)delete cart[k];MAP='';$('locmsg').textContent='Bắt buộc: cho phép lấy vị trí để shipper tìm đúng nhà bạn.';draw();drawCart();
  }catch(e){m.textContent='Gửi đơn chưa được. Vui lòng kiểm tra mạng và thử lại.'}
  $('order').disabled=false;
 };
