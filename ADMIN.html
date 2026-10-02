@@ -22,11 +22,13 @@ pre{white-space:pre-wrap;font:inherit;background:#f4f8f5;border-radius:10px;padd
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#17261d;color:#fff;padding:12px 18px;border-radius:12px;display:none;z-index:9;max-width:90%}
 .login{max-width:340px;margin:18vh auto;text-align:center}
 table{width:100%;border-collapse:collapse;font-size:.9rem}td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}th{color:var(--mute);font-weight:600}.big{font-size:1.5rem;font-weight:800;color:var(--brand)}
-.seg{display:flex;gap:6px;margin-top:8px}.seg button{flex:1;padding:9px 4px}.gh{font-size:.95rem;color:var(--brand);margin:14px 2px 8px}.qk{padding:10px}</style></head><body>
+.seg{display:flex;gap:6px;margin-top:8px}.seg button{flex:1;padding:9px 4px}.gh{font-size:.95rem;color:var(--brand);margin:14px 2px 8px}.qk{padding:10px}
+.sv{position:fixed;left:0;right:0;bottom:0;z-index:4;background:var(--bg);padding:10px;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.sv[hidden]{display:none}.sv button{display:block;max-width:700px;margin:0 auto;width:100%;padding:14px;font-size:1rem}.sv button:disabled{opacity:.6}body{padding-bottom:90px}</style></head><body>
 <div class="w"><h1>🛠️ Quản trị Lâm Thao Ăn Gì</h1></div>
 <nav id="nav" hidden><button data-v="shops">🏪 Quán</button><button data-v="items">🍜 Món</button><button data-v="orders">📦 Đơn</button><button data-v="rates">⭐ Đánh giá</button><button data-v="rev">📊 Doanh thu</button><button data-v="cfg">⚙️ Cài đặt</button><button data-reload>↻</button></nav>
 <div class="w" id="main"><div class="login c"><b>Nhập mật khẩu quản trị</b><div class="g"><input id="pw" type="password" autocomplete="current-password"><button class="p" id="go">Vào</button></div></div></div>
 <div id="toast"></div>
+<div class="sv" id="sv" hidden><button class="p" data-saveall>💾 Lưu tất cả</button></div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbwyheCMFxZJvm-lgD4Zm4ggdj8m984nfakQ1cIgEHGdLal1JfRh5HFS0knEpCz3dDlq/exec';
 const $=i=>document.getElementById(i);let D=null,PASS='',V='shops',CUR='';
@@ -60,6 +62,7 @@ const cfgHtml=()=>{const c=D.cfg||{};return `<div class="c" data-t="cfg"><b>⚙�
 <label>Đơn tối thiểu (đồng)</label><input data-f="min" inputmode="numeric" value="${esc(c.min)}">
 <label>Phí giao hàng cố định (đồng, 0 = thỏa thuận)</label><input data-f="ship" inputmode="numeric" value="${esc(c.ship)}"><label>Miễn phí giao từ đơn (đồng, 0 = không có)</label><input data-f="free" inputmode="numeric" value="${esc(c.free)}"><label class="ck"><input type="checkbox" data-f="pause" ${c.pause?'checked':''}> Tạm nghỉ nhận đơn</label>
 <div class="g"><button class="p" data-savecfg>Lưu cài đặt</button></div></div>`};
+const BLANK={row:0,name:'',price:'',desc:'',emoji:'',img:'',cat:''};
 let IM='detail';try{IM=localStorage.getItem('im')||'detail'}catch(e){}
 let CW=null,CWS='';
 const mapOk=u=>/^https:\/\/(www\.)?google\.com\/maps/.test(String(u||''));
@@ -88,10 +91,49 @@ function revHtml(){
 <div class="c"><b>Từng tháng</b>${tbl(grp(rows,r=>r.d.slice(0,7)),true,'Tháng')}</div>`}
 function render(){document.querySelectorAll('#nav [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===V));let h='';
  if(V==='shops')h=`<div class="c"><b>➕ Thêm quán mới</b><div class="g"><input id="nn" placeholder="Tên quán"><button class="p" data-addshop>Thêm</button></div></div>`+D.shops.map(shopRow).join('');
- else if(V==='items'){const s=D.shops.find(x=>x.name===CUR);h=`<div class="c"><label style="margin:0">Chọn quán</label><select id="sel">${D.shops.map(x=>`<option ${x.name===CUR?'selected':''}>${esc(x.name)}</option>`).join('')}</select><label>Chế độ phần món ăn</label><div class="g"><button class="${IM==='quick'?'':'p'}" data-im="detail">📝 Chi tiết (sửa món)</button><button class="${IM==='quick'?'p':''}" data-im="quick">⚡ Nhanh (bật/tắt món)</button></div></div>`+(s?catsCard(s)+(IM==='quick'?grouped(s,quickRow):itemRow({row:0,name:'',price:'',desc:'',emoji:'',img:'',cat:''})+grouped(s,itemRow)):'<p>Chưa có quán.</p>')}
+ else if(V==='items'){const s=D.shops.find(x=>x.name===CUR);h=`<div class="c"><label style="margin:0">Chọn quán</label><select id="sel">${D.shops.map(x=>`<option ${x.name===CUR?'selected':''}>${esc(x.name)}</option>`).join('')}</select><label>Chế độ phần món ăn</label><div class="g"><button class="${IM==='quick'?'':'p'}" data-im="detail">📝 Chi tiết (sửa món)</button><button class="${IM==='quick'?'p':''}" data-im="quick">⚡ Nhanh (bật/tắt món)</button></div></div>`+(s?catsCard(s)+(IM==='quick'?grouped(s,quickRow):itemRow(BLANK)+'<div class="c"><button data-addnew style="width:100%">➕ Thêm ô món nữa</button></div>'+grouped(s,itemRow)):'<p>Chưa có quán.</p>')}
  else if(V==='orders')h=`<p style="margin:4px 0 10px;color:var(--mute)">Chuyển sang <b>Đã giao</b> thì khách mới đánh giá được quán.</p>`+(D.orders.map(o=>`<div class="c"><b>${esc(o.code)}</b> <small>${esc(o.time)}</small><br>${esc(o.name)} · <a href="tel:${esc(o.phone)}" style="font-weight:700">📞 ${esc(o.phone)}</a><br><small>${esc(o.addr)}</small>${mapOk(o.map)?` · <a href="${esc(o.map)}" target="_blank" rel="noopener">📍 Bản đồ</a>`:""}${o.note?`<br><small>📝 ${esc(o.note)}</small>`:""}<pre>${esc(o.detail)}</pre><b>${money(o.total)}</b> · ${esc(o.pay)}${o.ship?` · giao: ${esc(o.ship)}`:""}<div class="g"><select data-st="1" data-row="${o.row}" data-code="${esc(o.code)}">${['Mới','Đã báo quán','Đang giao','Đã giao','Hủy'].map(x=>`<option ${x===o.status?'selected':''}>${x}</option>`).join('')}${['Mới','Đã báo quán','Đang giao','Đã giao','Hủy'].includes(o.status)?'':`<option selected>${esc(o.status)}</option>`}</select></div><label class="ck" style="margin-top:8px"><input type="checkbox" data-paid="1" data-row="${o.row}" data-code="${esc(o.code)}" ${o.paid==='Đã thu'?'checked':''}> Đã nhận tiền</label></div>`).join('')||'<p>Chưa có đơn.</p>');
  else if(V==='cfg')h=cfgHtml();else if(V==='rev')h=revHtml();else h=D.ratings.map(r=>`<div class="c"><b>${esc(r.shop)}</b> <span class="tag">${'★'.repeat(r.star)}${'☆'.repeat(5-r.star)}</span><br>${esc(r.cmt)||'<i>(không nhận xét)</i>'}<br><small>${esc(r.name)} · ${esc(r.code)} · ${esc(r.time)}</small></div>`).join('')||'<p>Chưa có đánh giá.</p>';
- $('main').innerHTML=h}
+ $('main').innerHTML=h;$('sv').hidden=!(V==='shops'||(V==='items'&&IM!=='quick'))}
+async function saveAll(b){
+ b.disabled=true;const old=b.textContent;
+ try{
+  if(V==='shops'){
+   const cards=[...document.querySelectorAll('#main [data-t=shop]')];let n=0,bad=0;
+   for(let i=0;i<cards.length;i++){
+    const s=D.shops[i],v=get(cards[i]);if(!s)continue;
+    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show)continue;
+    b.textContent='Đang lưu '+s.name+'…';
+    const r=await call({act:'saveShop',name:s.name,...v,busy:s.busy});r.ok?n++:bad++;
+   }
+   if(!n&&!bad)toast('Không có thay đổi để lưu');
+   else{toast('Đã lưu '+n+' quán ✓'+(bad?' · lỗi '+bad+' quán':''));await load()}
+   return}
+  if(V==='items'){
+   const s=D.shops.find(x=>x.name===CUR);if(!s)return;
+   const list=[];let err='';
+   document.querySelectorAll('#main [data-t=item]').forEach(c=>{
+    if(err)return;
+    const v=get(c),row=+c.dataset.row;
+    if(!row){if(!v.name)return;if(!(Number(v.price)>0)){err='Món "'+v.name+'" chưa có giá';return}list.push({...v,row:0});return}
+    const o=s.items.find(x=>x.row===row);if(!o)return;
+    if(!v.name){err='Có món đang để trống tên';return}
+    const same=v.name===String(o.name)&&Number(v.price)===Number(o.price)&&v.desc===String(o.desc||'')&&v.emoji===String(o.emoji||'')&&v.cat===String(o.cat||'')&&v.img===String(o.img||'')&&v.state===(o.state||'show');
+    if(!same)list.push({...v,row,orig:o.name});
+   });
+   if(err){toast(err);return}
+   if(!list.length){toast('Không có thay đổi để lưu');return}
+   b.textContent='Đang lưu '+list.length+' món…';
+   let r=await call({act:'saveItems',shop:CUR,items:list});
+   if(!r.ok&&/không hợp lệ/.test(r.msg||'')){ // Apps Script bản cũ: lưu từng món
+    r={ok:true};
+    for(let k=0;k<list.length&&r.ok;k++){b.textContent='Đang lưu '+(k+1)+'/'+list.length+'…';r=await call({act:'saveItem',shop:CUR,...list[k]})}
+   }
+   if(r.ok){toast('Đã lưu '+list.length+' món ✓'+(r.failed&&r.failed.length?' · bỏ qua (danh sách đã đổi): '+r.failed.join(', '):''));await load()}
+   else toast(r.msg||'Lỗi');
+  }
+ }finally{b.disabled=false;b.textContent=old}
+}
 document.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.cname!==undefined){const p=t.closest('[data-ci]');if(p)cw()[+p.dataset.ci].n=t.value}});
 document.addEventListener('change',async e=>{const t=e.target;
  if(t.id==='sel'){CUR=t.value;render()}
@@ -99,6 +141,8 @@ document.addEventListener('change',async e=>{const t=e.target;
  if(t.dataset.paid){const r=await call({act:'setPaid',row:+t.dataset.row,code:t.dataset.code,paid:t.checked});toast(r.ok?'Đã cập nhật thanh toán':r.msg)}
  if(t.dataset.st){const r=await call({act:'setStatus',row:+t.dataset.row,code:t.dataset.code,status:t.value});toast(r.ok?'Đã cập nhật trạng thái':r.msg)}});
 document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset,c=b.closest('[data-t]');
+ if(d.saveall!==undefined){await saveAll(b);return}
+ if(d.addnew!==undefined){b.closest('.c').insertAdjacentHTML('beforebegin',itemRow(BLANK));return}
  if(d.v){V=d.v;if(V==='rev'&&!REV){render();const r=await call({act:'report'});if(r.ok)REV=r.rows;else toast(r.msg||'Lỗi')}render();return}
  if(d.reload!==undefined){REV=null;await load();if(V==='rev'){const r=await call({act:'report'});if(r.ok)REV=r.rows;render()}toast('Đã tải lại');return}
  if(d.menu!==undefined){CUR=D.shops[+d.menu].name;V='items';render();scrollTo(0,0);return}
