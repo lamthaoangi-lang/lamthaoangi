@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="Đặt đồ ăn, đồ uống từ các quán ngon ở Lâm Thao. Chọn món, đặt hàng, giao tận nơi.">
 <meta property="og:title" content="Lâm Thao Ăn Gì – Đặt đồ ăn đồ uống">
 <meta property="og:description" content="Chọn món từ nhiều quán trong một đơn, giao tận nơi.">
@@ -108,6 +108,14 @@ button{transition:transform .14s,box-shadow .2s,filter .2s,background .2s}button
 @keyframes pls{0%{box-shadow:0 0 0 0 rgba(215,38,61,.45)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
 @keyframes shm{to{background-position:-200% 0}}@keyframes pp{from{transform:scale(.8);opacity:0}}@keyframes dr{to{stroke-dashoffset:0}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.chk circle,.chk path{stroke-dashoffset:0}}
+
+/* ===== nhẹ máy, chống zoom, ảnh món ===== */
+html,body,button,a,label,input,textarea{touch-action:manipulation}
+.top{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}
+.order:not(:disabled){animation:none}.hero:after{animation:none}.dish{animation:none}.ready .shopcard{animation:none}
+.shopcard.busy{opacity:.6;filter:grayscale(.7)}.busyshop .add{opacity:.35}
+.mini{position:relative;overflow:hidden;width:46px;height:46px;border-radius:12px;background:var(--soft);display:grid;place-items:center;font-size:1.5rem;flex:none}.mini img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.oi{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:.95rem}
 </style>
 </head>
 <body>
@@ -131,10 +139,10 @@ button{transition:transform .14s,box-shadow .2s,filter .2s,background .2s}button
 <p>Chọn món từ nhiều quán ngon quanh bạn trong một đơn. Chúng tôi sẽ gọi xác nhận và giao tận nơi.</p>
 <button class="order" id="popok">Xem thực đơn</button></div></div>
 <div class="toast" id="toast" role="status"><span>🎉</span><div id="toastt"></div></div>
-<div class="pop" id="typ" role="dialog" aria-modal="true" hidden><div class="pbox"><svg class="chk" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="3"/><path d="M14 27l8 8 16-17" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><h2>Cảm ơn bạn đã đặt hàng! 🎉</h2><p id="typt"></p><button class="order" id="typok">Tuyệt vời</button><button class="back" id="typtr" style="margin-top:6px">📦 Theo dõi đơn hàng</button></div></div>
+<div class="pop" id="typ" role="dialog" aria-modal="true" hidden><div class="pbox"><svg class="chk" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="3"/><path d="M14 27l8 8 16-17" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><h2>Cảm ơn bạn đã đặt hàng! 🎉</h2><p id="typt"></p><div id="typi" style="text-align:left;margin-bottom:12px;max-height:30dvh;overflow:auto"></div><button class="order" id="typok">Tuyệt vời</button><button class="back" id="typtr" style="margin-top:6px">📦 Theo dõi đơn hàng</button></div></div>
 <div class="pop" id="trk" role="dialog" aria-modal="true" hidden><div class="pbox"><h2>Theo dõi đơn hàng</h2><p>Nhập mã đơn và số điện thoại đã đặt.</p><input id="tcode" placeholder="Mã đơn (LT-0101-1234)" autocapitalize="characters"><input id="tphone" inputmode="tel" placeholder="Số điện thoại"><button class="order" id="tgo">Kiểm tra</button><div class="msg" id="tres" hidden style="text-align:left"></div><button class="back" id="tclose" style="margin-top:8px">Đóng</button></div></div>
 <div class="pop" id="rpop" role="dialog" aria-modal="true" aria-labelledby="rtitle" hidden>
-<div class="pbox"><h2 id="rtitle">Đánh giá quán</h2><p>Chỉ đánh giá được khi đơn đã giao. Nhập mã đơn (dạng LT-0101-1234) rồi chọn số sao.</p>
+<div class="pbox"><h2 id="rtitle">Đánh giá quán</h2><p>Chỉ đánh giá được khi đơn đã giao. Nhập mã đơn (dạng LT-0101-1234) rồi chạm sao để đổi (mặc định 5 sao).</p>
 <input id="rcode" placeholder="Mã đơn" autocapitalize="characters">
 <div class="stars" id="stars"><button data-star="1" aria-label="1 sao">☆</button><button data-star="2" aria-label="2 sao">☆</button><button data-star="3" aria-label="3 sao">☆</button><button data-star="4" aria-label="4 sao">☆</button><button data-star="5" aria-label="5 sao">☆</button></div>
 <textarea id="rcmt" rows="3" placeholder="Nhận xét về món, quán (không bắt buộc)"></textarea>
@@ -172,34 +180,42 @@ let MENU=[],SHOPS=[],MAP='';const cart={};
 const $=id=>document.getElementById(id);
 const money=n=>Number(n).toLocaleString('vi-VN')+'đ';
 function imgUrl(u){u=String(u||'').trim();if(!u)return '';
- if(/drive\.google\.com/.test(u)){const m=u.match(/\/d\/([\w-]+)/)||u.match(/[?&]id=([\w-]+)/);if(m)return 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w400'}
+ if(/drive\.google\.com/.test(u)){const m=u.match(/\/d\/([\w-]+)/)||u.match(/[?&]id=([\w-]+)/);if(m)return 'https://lh3.googleusercontent.com/d/'+m[1]+'=w400'}
  return u}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function load(){
- let D;try{D=await (await fetch(API_URL)).json();if(!D||typeof D!=='object')throw 0}catch(e){$('shops').innerHTML='<p class="empty">Không tải được thực đơn. Vui lòng kiểm tra mạng.<br><br><button class="add" style="width:auto;padding:0 18px;font-size:1rem" onclick="location.reload()">Tải lại</button></p>';return}
+ let c=null;try{c=JSON.parse(localStorage.getItem('ltd')||'null')}catch(e){}
+ if(c&&!MENU.length)build(c);
+ try{const D=await Promise.race([fetch(API_URL).then(r=>r.json()),new Promise((_,no)=>setTimeout(no,20000))]);if(!D||typeof D!=='object')throw 0;try{localStorage.setItem('ltd',JSON.stringify(D))}catch(e){}build(D)}
+ catch(e){if(!MENU.length)$('shops').innerHTML='<p class="empty">Không tải được thực đơn. Vui lòng kiểm tra mạng.<br><br><button class="add" style="width:auto;padding:0 18px;font-size:1rem" onclick="location.reload()">Tải lại</button></p>'}
+}
+function build(D){
+ const keep=Object.keys(cart).filter(i=>MENU[i]).map(i=>[MENU[i].shop+'|'+MENU[i].name,cart[i]]);
  const C=D.cfg||{};if(C.open!=null)OPEN=C.open;if(C.close!=null)CLOSE=C.close;if(C.min!=null)MIN_ORDER=C.min;PAUSE=!!C.pause;$('hrs').textContent=OPEN+'h đến '+CLOSE+'h';updOpen();
- setTimeout(()=>slide(C.banner||'Chào mừng bạn đến Lâm Thao Ăn Gì! Giao tận nơi, nhận đơn '+OPEN+'h–'+CLOSE+'h.',5500),500);
- MENU=Array.isArray(D)?D:(D.menu||[]);MENU.forEach((m,i)=>m.id=i);
- SHOPS=(Array.isArray(D)?[]:(D.shops||[])).map(x=>({name:x.name,logo:x.logo,desc:x.desc,avg:x.avg,cnt:x.cnt}));
+ if(!window.SL){SL=1;setTimeout(()=>slide(C.banner||'Chào mừng bạn đến Lâm Thao Ăn Gì! Giao tận nơi, nhận đơn '+OPEN+'h–'+CLOSE+'h.',5500),500)}
+ MENU=Array.isArray(D)?D:(D.menu||[]);MENU.forEach((m,i)=>m.id=i);for(const k in cart)delete cart[k];keep.forEach(([k,q])=>{const i=MENU.findIndex(m=>m.shop+'|'+m.name===k);if(i>=0)cart[i]=q});
+ SHOPS=(Array.isArray(D)?[]:(D.shops||[])).map(x=>({name:x.name,logo:x.logo,desc:x.desc,avg:x.avg,cnt:x.cnt,busy:!!x.busy}));
  MENU.forEach(m=>{if(!SHOPS.some(x=>x.name===m.shop))SHOPS.push({name:m.shop,logo:'',desc:''})});
  SHOPS.forEach(x=>{const it=MENU.filter(m=>m.shop===x.name);x.n=it.length;x.emoji=it[0]?it[0].emoji:'🍽️';if(!x.desc)x.desc=it.slice(0,4).map(m=>m.name).join(' · ')});
- SHOPS=SHOPS.filter(x=>x.n>0);draw();
+ SHOPS=SHOPS.filter(x=>x.n>0);draw();drawCart();setTimeout(()=>document.body.classList.add('ready'),1200);
 }
-const logo=(x,c)=>{const u=imgUrl(x.logo);return `<div class="${c}" aria-hidden="true">${esc(x.emoji)}${u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:''}</div>`};
+const logo=(x,c)=>{const u=imgUrl(x.logo);return `<div class="${c}" aria-hidden="true">${esc(x.emoji)}${u?`<img src="${esc(u)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`:''}</div>`};
 const dish=m=>{const q=cart[m.id]||0,u=imgUrl(m.img);
  return `<div class="dish"><div class="ph">${esc(m.emoji)}${u?`<img src="${esc(u)}" alt="${esc(m.name)}" loading="lazy" onerror="this.remove()">`:''}</div><div class="info"><h3>${esc(m.name)}</h3><p>${esc(m.desc)}</p><span class="price">${money(m.price)}</span></div>${q?`<div class="step"><button data-m="${m.id}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${m.id}" aria-label="Tăng">+</button></div>`:`<button class="add" data-a="${m.id}" aria-label="Thêm ${esc(m.name)}">+</button>`}</div>`};
+const isBusy=n=>{const s=SHOPS.find(x=>x.name===n);return !!(s&&s.busy)};
+const mini=m=>{const u=imgUrl(m.img);return `<span class="mini">${esc(m.emoji)}${u?`<img src="${esc(u)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`:''}</span>`};
 const fq=x=>!Q||(x.name+' '+x.desc+' '+MENU.filter(m=>m.shop===x.name).map(m=>m.name).join(' ')).toLowerCase().includes(Q);
 function draw(){
  const nm=decodeURIComponent(location.hash.slice(1)),sh=SHOPS.find(x=>x.name===nm);
  $('hero').hidden=!!sh;$('q').hidden=!!sh;
- if(!sh){$('shops').innerHTML='<h2 class="sect">Chọn quán để xem thực đơn</h2>'+(SHOPS.filter(fq).map(x=>`<button class="shopcard" data-s="${esc(x.name)}">${logo(x,'slogo')}<div class="sinfo"><h3>${esc(x.name)}</h3><p>${esc(x.desc)}</p><small>${x.n} món${x.cnt?` · ★ ${x.avg} (${x.cnt})`:''}</small></div><span class="chev" aria-hidden="true">›</span></button>`).join('')||'<p class="empty">Chưa có quán nào.</p>');return}
- $('shops').innerHTML=`<button class="back" data-back="1">‹ Tất cả quán</button><section class="shop"><div class="shophead">${logo(sh,'slogo')}<div class="sinfo"><h2>${esc(sh.name)}</h2><p>${esc(sh.desc)}</p></div></div><div class="ratebar"><button class="loc" data-rate="${esc(sh.name)}">⭐ Đánh giá quán${sh.cnt?` (★ ${sh.avg} · ${sh.cnt} lượt)`:''}</button></div>${MENU.filter(m=>m.shop===sh.name).map(dish).join('')}</section>`;
+ if(!sh){$('shops').innerHTML='<h2 class="sect">Chọn quán để xem thực đơn</h2>'+(SHOPS.filter(fq).map(x=>`<button class="shopcard${x.busy?' busy':''}" data-s="${esc(x.name)}">${logo(x,'slogo')}<div class="sinfo"><h3>${esc(x.name)}</h3><p>${esc(x.desc)}</p><small>${x.busy?'🔴 Quán đang bận · ':''}${x.n} món${x.cnt?` · ★ ${x.avg} (${x.cnt})`:''}</small></div><span class="chev" aria-hidden="true">›</span></button>`).join('')||'<p class="empty">Chưa có quán nào.</p>');return}
+ $('shops').innerHTML=`<button class="back" data-back="1">‹ Tất cả quán</button><section class="shop${sh.busy?' busyshop':''}"><div class="shophead">${logo(sh,'slogo')}<div class="sinfo"><h2>${esc(sh.name)}</h2><p>${esc(sh.desc)}</p></div></div>${sh.busy?'<div class="closed" style="border-radius:0;margin:0">🔴 Quán đang bận, tạm chưa nhận đơn. Bạn quay lại sau nhé!</div>':''}<div class="ratebar"><button class="loc" data-rate="${esc(sh.name)}">⭐ Đánh giá quán${sh.cnt?` (★ ${sh.avg} · ${sh.cnt} lượt)`:''}</button></div>${MENU.filter(m=>m.shop===sh.name).map(dish).join('')}</section>`;
 }
 window.addEventListener('hashchange',()=>{draw();scrollTo(0,0)});
 function drawCart(){
  let t=0,c=0;const ids=Object.keys(cart);
  $('list').innerHTML=ids.length?ids.map(i=>{const m=MENU[i],q=cart[i];t+=m.price*q;c+=q;
- return `<div class="line"><div>${esc(m.emoji)} ${esc(m.name)}<br><small>${esc(m.shop)} · ${money(m.price)}</small></div><div class="step"><button data-m="${i}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${i}" aria-label="Tăng">+</button></div></div>`}).join(''):'<p class="empty">Giỏ hàng đang trống. Chọn món bạn thích để bắt đầu.</p>';
+ return `<div class="line"><div class="oi">${mini(m)}<div>${esc(m.name)}<br><small>${esc(m.shop)} · ${money(m.price)}</small></div></div><div class="step"><button data-m="${i}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${i}" aria-label="Tăng">+</button></div></div>`}).join(''):'<p class="empty">Giỏ hàng đang trống. Chọn món bạn thích để bắt đầu.</p>';
  $('sub').textContent=$('total').textContent=$('total2').textContent=money(t);$('ship').textContent='Thỏa thuận sau';$('count').textContent=c;{const f=$('fab');f.classList.remove('bump');void f.offsetWidth;f.classList.add('bump')}
  $('hint').textContent=t>0?'Phí giao hàng do quán thỏa thuận với bạn sau khi xác nhận đơn.':'';
 }
@@ -210,7 +226,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(d.trk!==undefined){openTrack();return}
  if(d.rate!==undefined){openRate(d.rate);return}
  if(d.star!==undefined){setStar(+d.star);return}
- if(d.a!==undefined){cart[d.a]=(cart[d.a]||0)+1;draw();drawCart()}
+ if(d.a!==undefined){if(isBusy(MENU[d.a].shop)){slide('Quán đang bận, bạn quay lại sau nhé!',3000);return}cart[d.a]=(cart[d.a]||0)+1;draw();drawCart()}
  if(d.m!==undefined){if(--cart[d.m]<=0)delete cart[d.m];draw();drawCart()}
 });
 $('fab').onclick=()=>sheet(true);$('close').onclick=$('bk').onclick=()=>sheet(false);
@@ -233,26 +249,27 @@ $('order').onclick=async()=>{
  const m=$('msg'),ids=Object.keys(cart);m.hidden=false;
  if(!isOpen()){m.textContent='Hiện đã đóng cửa. Chúng tôi nhận đơn từ '+OPEN+'h đến '+CLOSE+'h.';return}
  if(!ids.length){m.textContent='Hãy thêm ít nhất một món vào giỏ trước khi đặt.';return}
+ const bz=[...new Set(ids.map(i=>MENU[i].shop))].filter(isBusy);if(bz.length){m.textContent='Quán đang bận: '+bz.join(', ')+'. Bạn bỏ món của quán này hoặc quay lại sau nhé.';return}
  const sub=ids.reduce((s,i)=>s+MENU[i].price*cart[i],0);
  if(sub<MIN_ORDER){m.textContent='Đơn tối thiểu '+money(MIN_ORDER)+'. Bạn hãy thêm món nhé.';return}
  const name=$('name').value.trim(),phone=$('phone').value.replace(/[\s.-]/g,''),addr=$('addr').value.trim();
  if(!name||!phone||!addr){m.textContent='Vui lòng điền đủ họ tên, số điện thoại và địa chỉ.';return}
  if(!/^(0|\+84)\d{9,10}$/.test(phone)){m.textContent='Số điện thoại chưa đúng, vui lòng kiểm tra lại.';return}
  if(!MAP&&!(await getLoc())){m.textContent='Bạn cần cho phép chia sẻ vị trí để đặt hàng.';return}
- const items=ids.map(i=>({shop:MENU[i].shop,name:MENU[i].name,qty:cart[i],price:MENU[i].price}));
+ const items=ids.map(i=>({shop:MENU[i].shop,name:MENU[i].name,qty:cart[i],price:MENU[i].price,emoji:MENU[i].emoji,img:MENU[i].img}));
  const ship='Thỏa thuận sau khi xác nhận',total=sub,pay=document.querySelector('input[name=pay]:checked').value;
  const d=new Date(),code='LT-'+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+Math.floor(1000+Math.random()*9000);
  $('order').disabled=true;m.textContent='Đang gửi đơn…';
  try{
   await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({code,name,phone,addr,note:$('note').value.trim(),map:MAP,pay,ship,items,total})});
-  m.innerHTML='<b>Đặt hàng thành công!</b><br>Mã đơn: <b>'+code+'</b><br>'+items.map(x=>x.qty+' x '+esc(x.name)).join('<br>')+'<br>Phí giao: '+ship+'<br>Tiền món: <b>'+money(total)+'</b> ('+pay+')<br>Chúng tôi sẽ gọi xác nhận qua số '+esc(phone)+'. Cần hỗ trợ gọi '+PHONE+'.'+(pay==='Chuyển khoản'?payBox(code,total):'')+'<br><small>Khi đơn đã giao, mời bạn đánh giá quán (cần mã đơn ở trên):</small>'+[...new Set(items.map(x=>x.shop))].map(sp=>'<button class="loc" data-rate="'+esc(sp)+'">⭐ Đánh giá '+esc(sp)+'</button>').join('');
-  try{localStorage.setItem('lastcode',code)}catch(e){}for(const k in cart)delete cart[k];MAP='';$('locmsg').textContent=LOCTXT;draw();drawCart();thanks(code,pay);
+  m.innerHTML='<b>Đặt hàng thành công!</b><br>Mã đơn: <b>'+code+'</b><br>'+items.map(x=>'<div class="oi">'+mini(x)+'<div>'+x.qty+' × '+esc(x.name)+'<br><small>'+esc(x.shop)+'</small></div></div>').join('')+'<br>Phí giao: '+ship+'<br>Tiền món: <b>'+money(total)+'</b> ('+pay+')<br>Chúng tôi sẽ gọi xác nhận qua số '+esc(phone)+'. Cần hỗ trợ gọi '+PHONE+'.'+(pay==='Chuyển khoản'?payBox(code,total):'')+'<br><small>Khi đơn đã giao, mời bạn đánh giá quán (cần mã đơn ở trên):</small>'+[...new Set(items.map(x=>x.shop))].map(sp=>'<button class="loc" data-rate="'+esc(sp)+'">⭐ Đánh giá '+esc(sp)+'</button>').join('');
+  try{localStorage.setItem('lastcode',code)}catch(e){}for(const k in cart)delete cart[k];MAP='';$('locmsg').textContent=LOCTXT;draw();drawCart();thanks(code,pay,items);
  }catch(e){m.textContent='Gửi đơn chưa được. Vui lòng kiểm tra mạng và thử lại.'}
  $('order').disabled=false;
 };
 let RS='',RSTAR=0;
 function setStar(n){RSTAR=n;document.querySelectorAll('#stars button').forEach((b,i)=>b.textContent=i<n?'★':'☆')}
-function openRate(sp){RS=sp;setStar(0);$('rtitle').textContent='Đánh giá '+sp;let c='';try{c=localStorage.getItem('lastcode')||''}catch(e){}$('rcode').value=c;$('rcmt').value='';$('rmsg').hidden=true;$('rsend').disabled=false;$('rpop').hidden=false}
+function openRate(sp){RS=sp;setStar(5);$('rtitle').textContent='Đánh giá '+sp;let c='';try{c=localStorage.getItem('lastcode')||''}catch(e){}$('rcode').value=c;$('rcmt').value='';$('rmsg').hidden=true;$('rsend').disabled=false;$('rpop').hidden=false}
 $('rclose').onclick=()=>{$('rpop').hidden=true};
 $('rsend').onclick=async()=>{const m=$('rmsg'),code=$('rcode').value.trim();m.hidden=false;
  if(!code){m.textContent='Vui lòng nhập mã đơn.';return}
@@ -266,7 +283,7 @@ function slide(t,ms){$('toastt').textContent=t;$('toast').classList.add('on');se
 $('toast').onclick=()=>$('toast').classList.remove('on');
 $('q').oninput=()=>{Q=$('q').value.trim().toLowerCase();draw()};
 const lastCode=()=>{try{return localStorage.getItem('lastcode')||''}catch(e){return ''}};
-function thanks(code,pay){$('typt').innerHTML='Mã đơn của bạn: <b>'+esc(code)+'</b><br>Chúng tôi sẽ gọi xác nhận trong ít phút.'+(pay==='Chuyển khoản'?'<br>Mã QR chuyển khoản nằm trong giỏ hàng.':'');$('typ').hidden=false;try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}}
+function thanks(code,pay,items){$('typi').innerHTML=items.map(x=>'<div class="oi">'+mini(x)+'<div>'+x.qty+' × '+esc(x.name)+'</div></div>').join('');$('typt').innerHTML='Mã đơn của bạn: <b>'+esc(code)+'</b><br>Chúng tôi sẽ gọi xác nhận trong ít phút.'+(pay==='Chuyển khoản'?'<br>Mã QR chuyển khoản nằm trong giỏ hàng.':'');$('typ').hidden=false;try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}}
 $('typok').onclick=()=>{$('typ').hidden=true};$('typtr').onclick=()=>{$('typ').hidden=true;openTrack()};
 function openTrack(){$('tcode').value=lastCode();$('tres').hidden=true;$('trk').hidden=false}
 $('tclose').onclick=()=>{$('trk').hidden=true};
@@ -282,7 +299,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePop();['rpop',
 let seen=false;try{seen=sessionStorage.getItem('seen')==='1'}catch(e){}
 
 updOpen();setInterval(updOpen,60000);
-load();drawCart();
+load();drawCart();setInterval(()=>{if(document.visibilityState==='visible'&&!$('sheet').classList.contains('on'))load()},90000);
+document.addEventListener('gesturestart',e=>e.preventDefault());
 </script>
 </body>
 </html>
