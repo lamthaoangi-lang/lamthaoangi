@@ -108,6 +108,11 @@ button{transition:transform .14s,box-shadow .2s,filter .2s,background .2s}button
 @keyframes up{from{opacity:0;transform:translateY(16px)}}@keyframes flt{50%{transform:rotate(-12deg) translateY(-8px)}}@keyframes bump{40%{transform:scale(1.06)}}
 @keyframes pls{0%{box-shadow:0 0 0 0 rgba(215,38,61,.45)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
 @keyframes shm{to{background-position:-200% 0}}@keyframes pp{from{transform:scale(.8);opacity:0}}@keyframes dr{to{stroke-dashoffset:0}}
+/* ===== Nhãn quán + số đơn đã bán ===== */
+.bdg{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:99px;font-size:.72rem;font-weight:800;vertical-align:middle;white-space:nowrap}
+.b-hot{background:#ffe3d6;color:#c2410c}.b-star{background:#fff1bf;color:#8a5a00}.b-new{background:#dbeafe;color:#1d4ed8}.b-promo{background:#fce7f3;color:#be185d}.b-fav{background:var(--soft);color:var(--brand)}
+@media(prefers-color-scheme:dark){.b-hot{background:#4a2414;color:#ffb089}.b-star{background:#4a3a0a;color:#ffd75e}.b-new{background:#15305c;color:#9cc2ff}.b-promo{background:#4a1735;color:#ff9cc9}}
+.shopcard.hl{border-color:#f5a623}
 /* ===== Popup chào mừng (hiệu ứng động + logo) ===== */
 #pop{background:radial-gradient(circle at 50% 30%,rgba(31,138,76,.6),rgba(0,0,0,.72));animation:fi .35s both}
 .pbox.wel{position:relative;overflow:hidden;animation:pp .6s cubic-bezier(.2,.9,.3,1.3) both}
@@ -249,11 +254,14 @@ function build(D){
  const C=D.cfg||{};if(C.open!=null)OPEN=C.open;if(C.close!=null)CLOSE=C.close;if(C.min!=null)MIN_ORDER=C.min;PAUSE=!!C.pause;SHIP=C.ship||0;FREE=C.free||0;$('hrs').textContent=OPEN+'h đến '+CLOSE+'h';updOpen();
  if(!window.SL){window.SL=1;const bt=C.banner||'Chào mừng bạn đến Lâm Thao Ăn Gì! Giao tận nơi, nhận đơn '+OPEN+'h–'+CLOSE+'h.';if($('pop').hidden)setTimeout(()=>slide(bt,5500),500);else window.PEND=bt}
  MENU=Array.isArray(D)?D:(D.menu||[]);MENU.forEach((m,i)=>m.id=i);for(const k in cart)delete cart[k];keep.forEach(([k,q])=>{const i=MENU.findIndex(m=>m.shop+'|'+m.name===k);if(i>=0)cart[i]=q});
- SHOPS=(Array.isArray(D)?[]:(D.shops||[])).map(x=>({name:x.name,logo:x.logo,desc:x.desc,avg:x.avg,cnt:x.cnt,busy:!!x.busy,cats:x.cats||[]}));
+ SHOPS=(Array.isArray(D)?[]:(D.shops||[])).map(x=>({name:x.name,logo:x.logo,desc:x.desc,avg:x.avg,cnt:x.cnt,busy:!!x.busy,cats:x.cats||[],badge:x.badge||'',sold:x.sold||0}));
  MENU.forEach(m=>{if(!SHOPS.some(x=>x.name===m.shop))SHOPS.push({name:m.shop,logo:'',desc:'',cats:[]})});
  SHOPS.forEach(x=>{const it=MENU.filter(m=>m.shop===x.name);x.n=it.length;x.emoji=it[0]?it[0].emoji:'🍽️';if(!x.desc)x.desc=it.slice(0,4).map(m=>m.name).join(' · ')});
  SHOPS=SHOPS.filter(x=>x.n>0);draw();drawCart();setTimeout(()=>document.body.classList.add('ready'),1200);
 }
+const BD={hot:['🔥','Bán chạy'],star:['⭐','Nổi bật'],new:['🆕','Quán mới'],promo:['🎁','Khuyến mãi'],fav:['💚','Yêu thích']};
+const bdg=k=>BD[k]?`<span class="bdg b-${k}">${BD[k][0]} ${BD[k][1]}</span>`:'';
+const soldTxt=n=>n>0?'🛒 Đã bán '+Number(n).toLocaleString('vi-VN')+' đơn':'';
 const logo=(x,c)=>{const u=imgUrl(x.logo);return `<div class="${c}" aria-hidden="true">${esc(x.emoji)}${u?`<img src="${esc(u)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`:''}</div>`};
 const dish=m=>{const q=cart[m.id]||0,u=imgUrl(m.img);
  return `<div class="dish${m.out?' out':''}" data-did="${m.id}"><div class="ph">${esc(m.emoji)}${u?`<img src="${esc(u)}" alt="${esc(m.name)}" loading="lazy" onerror="this.remove()">`:''}</div><div class="info"><h3>${esc(m.name)}</h3><p>${esc(m.desc)}</p><span class="price">${money(m.price)}</span></div>${m.out?'<span class="tag">Hết món</span>':q?`<div class="step"><button data-m="${m.id}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${m.id}" aria-label="Tăng">+</button></div>`:`<button class="add" data-a="${m.id}" aria-label="Thêm ${esc(m.name)}">+</button>`}</div>`};
@@ -263,8 +271,8 @@ const fq=x=>!Q||(x.name+' '+x.desc+' '+MENU.filter(m=>m.shop===x.name).map(m=>m.
 function draw(){
  const nm=decodeURIComponent(location.hash.slice(1)),sh=SHOPS.find(x=>x.name===nm);if(LS!==nm){CAT='';LS=nm}
  $('hero').hidden=!!sh;$('q').hidden=!!sh;
- if(!sh){$('shops').innerHTML='<h2 class="sect">Chọn quán để xem thực đơn</h2>'+(SHOPS.filter(fq).map(x=>`<button class="shopcard${x.busy?' busy':''}" data-s="${esc(x.name)}">${logo(x,'slogo')}<div class="sinfo"><h3>${esc(x.name)}</h3><p>${esc(x.desc)}</p><small>${x.busy?'🔴 Quán đang bận · ':''}${x.n} món${x.cnt?` · ★ ${x.avg} (${x.cnt})`:''}</small></div><span class="chev" aria-hidden="true">›</span></button>`).join('')||'<p class="empty">Chưa có quán nào.</p>');return}
- $('shops').innerHTML=`<button class="back" data-back="1">‹ Tất cả quán</button><section class="shop" style="margin-bottom:8px"><div class="shophead">${logo(sh,'slogo')}<div class="sinfo"><h2>${esc(sh.name)}</h2><p>${esc(sh.desc)}</p></div></div>${sh.busy?'<div class="closed" style="border-radius:0;margin:0">🔴 Quán đang bận, tạm chưa nhận đơn. Bạn quay lại sau nhé!</div>':''}<div class="ratebar"><button class="loc" data-rate="${esc(sh.name)}">⭐ Đánh giá quán${sh.cnt?` (★ ${sh.avg} · ${sh.cnt} lượt)`:''}</button></div></section><div class="cats" id="cats">${chipsHtml(sh)}</div><section class="shop${sh.busy?' busyshop':''}" id="menu">${bodyHtml(sh)}</section>`;
+ if(!sh){$('shops').innerHTML='<h2 class="sect">Chọn quán để xem thực đơn</h2>'+(SHOPS.filter(fq).map(x=>`<button class="shopcard${x.busy?' busy':''}${x.badge==='hot'||x.badge==='star'?' hl':''}" data-s="${esc(x.name)}">${logo(x,'slogo')}<div class="sinfo"><h3>${esc(x.name)}${bdg(x.badge)}</h3><p>${esc(x.desc)}</p><small>${x.busy?'🔴 Quán đang bận · ':''}${x.n} món${x.cnt?` · ★ ${x.avg} (${x.cnt})`:''}${x.sold?` · ${soldTxt(x.sold)}`:''}</small></div><span class="chev" aria-hidden="true">›</span></button>`).join('')||'<p class="empty">Chưa có quán nào.</p>');return}
+ $('shops').innerHTML=`<button class="back" data-back="1">‹ Tất cả quán</button><section class="shop" style="margin-bottom:8px"><div class="shophead">${logo(sh,'slogo')}<div class="sinfo"><h2>${esc(sh.name)}${bdg(sh.badge)}</h2><p>${esc(sh.desc)}</p>${sh.sold?`<small>${soldTxt(sh.sold)}</small>`:''}</div></div>${sh.busy?'<div class="closed" style="border-radius:0;margin:0">🔴 Quán đang bận, tạm chưa nhận đơn. Bạn quay lại sau nhé!</div>':''}<div class="ratebar"><button class="loc" data-rate="${esc(sh.name)}">⭐ Đánh giá quán${sh.cnt?` (★ ${sh.avg} · ${sh.cnt} lượt)`:''}</button></div></section><div class="cats" id="cats">${chipsHtml(sh)}</div><section class="shop${sh.busy?' busyshop':''}" id="menu">${bodyHtml(sh)}</section>`;
 }
 window.addEventListener('hashchange',()=>{draw();scrollTo(0,0)});
 const curShop=()=>SHOPS.find(x=>x.name===decodeURIComponent(location.hash.slice(1)));
