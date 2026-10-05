@@ -45,9 +45,11 @@ $('go').onclick=async()=>{PASS=$('pw').value;if(await load())try{sessionStorage.
 $('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
 function pick(cb,max){const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{if(!f.files[0])return;const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82).split(',')[1])};im.src=URL.createObjectURL(f.files[0])};f.click()}
 const get=c=>{const o={};c.querySelectorAll('[data-f]').forEach(i=>o[i.dataset.f]=i.type==='checkbox'?i.checked:i.value.trim());return o};
-const shopRow=(s,i)=>`<div class="c" data-t="shop"><div class="hd">${thumb(s.logo)}<div><b>${esc(s.name)}</b><br><small>${s.items.length} món${s.show?'':' · ĐANG ẨN'}${s.busy?' · 🔴 ĐANG BẬN':''}</small></div></div>
+const EMAIL_RE=/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+const shopRow=(s,i)=>`<div class="c" data-t="shop"><div class="hd">${thumb(s.logo)}<div><b>${esc(s.name)}</b><br><small>${s.items.length} món${s.show?'':' · ĐANG ẨN'}${s.busy?' · 🔴 ĐANG BẬN':''}${s.email?' · ✉️ '+esc(s.email):' · ✉️ chưa có email'}</small></div></div>
 <label>Logo quán (dán link hoặc bấm Tải ảnh)</label><div class="g"><input data-f="logo" value="${esc(s.logo)}"><button data-up="logo">Tải ảnh</button></div>
 <label>Mô tả ngắn: quán bán gì (VD: Trà sữa · Cà phê · Ăn vặt)</label><input data-f="desc" value="${esc(s.desc)}">
+<label>✉️ Gmail nhận đơn của quán (khách đặt món của quán này thì quán nhận mail; để trống = quán không nhận mail)</label><input data-f="email" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com" value="${esc(s.email)}">
 <label class="ck"><input type="checkbox" data-f="show" ${s.show?'checked':''}> Hiện quán trên web</label>
 <div class="g"><button class="${s.busy?'p':'d'}" data-busy="${i}">${s.busy?'🟢 Mở lại quán':'🔴 Đóng quán (bận)'}</button><button class="p" data-saveshop="${i}">Lưu quán</button><button data-menu="${i}">Sửa món ›</button></div></div>`;
 const itemRow=it=>`<div class="c" data-t="item" data-row="${it.row||0}"><div class="hd">${thumb(it.img,esc(it.emoji)||'🍽️')}<b>${it.row?esc(it.name):'➕ Thêm món mới'}</b></div>
@@ -90,7 +92,7 @@ function revHtml(){
 <div class="c"><b>Theo cửa hàng (tháng ${esc(RM)})</b>${tbl(sh,false,'Cửa hàng')}</div>
 <div class="c"><b>Từng tháng</b>${tbl(grp(rows,r=>r.d.slice(0,7)),true,'Tháng')}</div>`}
 function render(){document.querySelectorAll('#nav [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===V));let h='';
- if(V==='shops')h=`<div class="c"><b>➕ Thêm quán mới</b><div class="g"><input id="nn" placeholder="Tên quán"><button class="p" data-addshop>Thêm</button></div></div>`+D.shops.map(shopRow).join('');
+ if(V==='shops')h=`<div class="c"><b>➕ Thêm quán mới</b><div class="g"><input id="nn" placeholder="Tên quán"></div><label>✉️ Gmail nhận đơn của quán (không bắt buộc, có thể thêm sau)</label><div class="g"><input id="ne" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com"><button class="p" data-addshop>Thêm</button></div></div>`+D.shops.map(shopRow).join('');
  else if(V==='items'){const s=D.shops.find(x=>x.name===CUR);h=`<div class="c"><label style="margin:0">Chọn quán</label><select id="sel">${D.shops.map(x=>`<option ${x.name===CUR?'selected':''}>${esc(x.name)}</option>`).join('')}</select><label>Chế độ phần món ăn</label><div class="g"><button class="${IM==='quick'?'':'p'}" data-im="detail">📝 Chi tiết (sửa món)</button><button class="${IM==='quick'?'p':''}" data-im="quick">⚡ Nhanh (bật/tắt món)</button></div></div>`+(s?catsCard(s)+(IM==='quick'?grouped(s,quickRow):itemRow(BLANK)+'<div class="c"><button data-addnew style="width:100%">➕ Thêm ô món nữa</button></div>'+grouped(s,itemRow)):'<p>Chưa có quán.</p>')}
  else if(V==='orders')h=`<p style="margin:4px 0 10px;color:var(--mute)">Chuyển sang <b>Đã giao</b> thì khách mới đánh giá được quán.</p>`+(D.orders.map(o=>`<div class="c"><b>${esc(o.code)}</b> <small>${esc(o.time)}</small><br>${esc(o.name)} · <a href="tel:${esc(o.phone)}" style="font-weight:700">📞 ${esc(o.phone)}</a><br><small>${esc(o.addr)}</small>${mapOk(o.map)?` · <a href="${esc(o.map)}" target="_blank" rel="noopener">📍 Bản đồ</a>`:""}${o.note?`<br><small>📝 ${esc(o.note)}</small>`:""}<pre>${esc(o.detail)}</pre><b>${money(o.total)}</b> · ${esc(o.pay)}${o.ship?` · giao: ${esc(o.ship)}`:""}<div class="g"><select data-st="1" data-row="${o.row}" data-code="${esc(o.code)}">${['Mới','Đã báo quán','Đang giao','Đã giao','Hủy'].map(x=>`<option ${x===o.status?'selected':''}>${x}</option>`).join('')}${['Mới','Đã báo quán','Đang giao','Đã giao','Hủy'].includes(o.status)?'':`<option selected>${esc(o.status)}</option>`}</select></div><label class="ck" style="margin-top:8px"><input type="checkbox" data-paid="1" data-row="${o.row}" data-code="${esc(o.code)}" ${o.paid==='Đã thu'?'checked':''}> Đã nhận tiền</label></div>`).join('')||'<p>Chưa có đơn.</p>');
  else if(V==='cfg')h=cfgHtml();else if(V==='rev')h=revHtml();else h=D.ratings.map(r=>`<div class="c"><b>${esc(r.shop)}</b> <span class="tag">${'★'.repeat(r.star)}${'☆'.repeat(5-r.star)}</span><br>${esc(r.cmt)||'<i>(không nhận xét)</i>'}<br><small>${esc(r.name)} · ${esc(r.code)} · ${esc(r.time)}</small></div>`).join('')||'<p>Chưa có đánh giá.</p>';
@@ -102,12 +104,13 @@ async function saveAll(b){
    const cards=[...document.querySelectorAll('#main [data-t=shop]')];let n=0,bad=0;
    for(let i=0;i<cards.length;i++){
     const s=D.shops[i],v=get(cards[i]);if(!s)continue;
-    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show)continue;
+    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show&&v.email===String(s.email||''))continue;
+    if(v.email&&!EMAIL_RE.test(v.email)){toast('Email của quán "'+s.name+'" chưa đúng định dạng');bad++;continue}
     b.textContent='Đang lưu '+s.name+'…';
     const r=await call({act:'saveShop',name:s.name,...v,busy:s.busy});r.ok?n++:bad++;
    }
    if(!n&&!bad)toast('Không có thay đổi để lưu');
-   else{toast('Đã lưu '+n+' quán ✓'+(bad?' · lỗi '+bad+' quán':''));await load()}
+   else if(n||!bad){toast('Đã lưu '+n+' quán ✓'+(bad?' · lỗi '+bad+' quán':''));await load()}
    return}
   if(V==='items'){
    const s=D.shops.find(x=>x.name===CUR);if(!s)return;
@@ -158,7 +161,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
  if(d.csave!==undefined){const w=cw(),names=w.map(x=>x.n.trim());if(names.some(x=>!x))return toast('Có nhóm đang để trống tên');if(new Set(names).size<names.length)return toast('Tên nhóm bị trùng');const ren={};w.forEach(x=>{if(x.o&&x.o!==x.n.trim())ren[x.o]=x.n.trim()});
   const q=await call({act:'saveCats',shop:CUR,cats:names,renames:ren});if(q.ok){CW=null;toast('Đã lưu nhóm ✓');await load()}else toast(q.msg||'Lỗi');return}
  let r;
- if(d.addshop!==undefined){const n=$('nn').value.trim();if(!n)return toast('Nhập tên quán');r=await call({act:'saveShop',name:n,show:true})}
+ if(d.addshop!==undefined){const n=$('nn').value.trim(),em=$('ne').value.trim();if(!n)return toast('Nhập tên quán');if(em&&!EMAIL_RE.test(em))return toast('Email quán chưa đúng định dạng (VD: quan@gmail.com)');r=await call({act:'saveShop',name:n,show:true,email:em})}
  else if(d.busy!==undefined){const s=D.shops[+d.busy];r=await call({act:'saveShop',name:s.name,...get(c),busy:!s.busy})}
  else if(d.saveshop!==undefined)r=await call({act:'saveShop',name:D.shops[+d.saveshop].name,...get(c),busy:D.shops[+d.saveshop].busy});
  else if(d.saveitem!==undefined)r=await call({act:'saveItem',shop:CUR,row:+c.dataset.row,...get(c)});
