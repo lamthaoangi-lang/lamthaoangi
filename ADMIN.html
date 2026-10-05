@@ -66,7 +66,7 @@ const shopRow=(s,i)=>`<div class="c" data-t="shop" data-n="${esc(s.name)}"><div 
 <label>✉️ Gmail nhận đơn của quán (khách đặt món của quán này thì quán nhận mail; để trống = quán không nhận mail)</label><input data-f="email" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com" value="${esc(s.email)}">
 <label>Nhãn hiển thị cạnh tên quán trên trang khách</label><select data-f="badge">${badgeOpts(s.badge)}</select>
 <label class="ck"><input type="checkbox" data-f="show" ${s.show?'checked':''}> Hiện quán trên web</label>
-<div class="g"><button class="${s.busy?'p':'d'}" data-busy="${i}">${s.busy?'🟢 Mở lại quán':'🔴 Đóng quán (bận)'}</button><button class="p" data-saveshop="${i}">Lưu quán</button><button data-menu="${i}">Sửa món ›</button></div>${mvRow(i)}</div>`;
+<div class="g"><button class="${s.busy?'p':'d'}" data-busy="${i}">${s.busy?'🟢 Mở lại quán':'🔴 Đóng quán (bận)'}</button><button class="p" data-saveshop="${i}">Lưu quán</button><button data-menu="${i}">Sửa món ›</button><button class="d" data-delshop="${i}">🗑️ Xóa quán</button></div>${mvRow(i)}</div>`;
 const itemRow=it=>`<div class="c" data-t="item" data-row="${it.row||0}"><div class="hd">${thumb(it.img,esc(it.emoji)||'🍽️')}<b>${it.row?esc(it.name):'➕ Thêm món mới'}</b></div>
 <input data-f="name" placeholder="Tên món" value="${esc(it.name)}"><div class="g2" style="margin-top:6px"><input data-f="price" inputmode="numeric" placeholder="Giá (VD 25000)" value="${esc(it.price)}"><input data-f="emoji" placeholder="Emoji" value="${esc(it.emoji)}"></div>
 <input data-f="desc" placeholder="Mô tả món" style="margin-top:6px" value="${esc(it.desc)}"><label>Nhóm món</label><select data-f="cat">${catOpts(it.cat)}</select>
@@ -179,6 +179,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
  let r;
  if(d.addshop!==undefined){const n=$('nn').value.trim(),em=$('ne').value.trim();if(!n)return toast('Nhập tên quán');if(em&&!EMAIL_RE.test(em))return toast('Email quán chưa đúng định dạng (VD: quan@gmail.com)');r=await call({act:'saveShop',name:n,show:true,email:em})}
  else if(d.busy!==undefined){const s=D.shops[+d.busy];r=await call({act:'saveShop',name:s.name,...get(c),busy:!s.busy})}
+ else if(d.delshop!==undefined){const s=D.shops[+d.delshop];if(!confirm('Xóa hẳn quán "'+s.name+'" cùng '+s.items.length+' món? Không thể hoàn tác.'))return;r=await call({act:'delShop',name:s.name})}
  else if(d.saveshop!==undefined)r=await call({act:'saveShop',name:D.shops[+d.saveshop].name,...get(c),busy:D.shops[+d.saveshop].busy});
  else if(d.saveitem!==undefined)r=await call({act:'saveItem',shop:CUR,row:+c.dataset.row,...get(c)});
  else if(d.savecfg!==undefined)r=await call({act:'saveCfg',...get(c)});
