@@ -393,11 +393,10 @@ $('tgo').onclick=async()=>{const m=$('tres');m.hidden=false;m.textContent='Đang
   const S=['Mới','Đã báo quán','Đang giao','Đã giao'],i=S.findIndex(x=>String(r.status).startsWith(x));
   m.innerHTML='<b>'+esc(r.code)+'</b> · '+money(r.total)+(r.status==='Hủy'?'<br><b style="color:var(--accent)">Đơn đã hủy</b>':'<div class="tl">'+S.map((x,k)=>'<span class="'+(k<=i?'on':'')+'">'+x+'</span>').join('')+'</div>')+'<pre>'+esc(r.detail)+'</pre>'+(i===3?'Đơn đã giao. Bạn có thể đánh giá quán ở trang quán nhé!':'')
  }catch(e){m.textContent='Chưa kiểm tra được, thử lại nhé.'}};
-function closePop(){$('pop').hidden=true;try{sessionStorage.setItem('seen','1')}catch(e){}if(window.PEND){const t=window.PEND;window.PEND=null;setTimeout(()=>slide(t,5500),400)}}
+function closePop(){$('pop').hidden=true;if(window.PEND){const t=window.PEND;window.PEND=null;setTimeout(()=>slide(t,5500),400)}}
 $('popok').onclick=closePop;$('pop').onclick=e=>{if(e.target===$('pop'))closePop()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePop();['rpop','trk','typ','pol'].forEach(i=>$(i).hidden=true);sheet(false)}});
-let seen=false;try{seen=sessionStorage.getItem('seen')==='1'}catch(e){}
-if(!seen){$('pop').hidden=false;setTimeout(()=>{try{$('popok').focus({preventScroll:true})}catch(e){}},700)} // hiện popup chào mừng 1 lần mỗi lần mở web
+$('pop').hidden=false;setTimeout(()=>{try{$('popok').focus({preventScroll:true})}catch(e){}},700); // popup chào mừng hiện MỖI LẦN vào hoặc tải lại web
 
 $('yr').textContent=new Date().getFullYear();setTh();addEventListener('resize',setTh);updOpen();setInterval(updOpen,60000);
 load();drawCart();setInterval(()=>{if(document.visibilityState==='visible'&&!$('sheet').classList.contains('on'))load()},90000);
