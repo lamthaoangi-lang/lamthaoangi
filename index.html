@@ -47,6 +47,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .step{display:flex;align-items:center;flex:none;background:var(--soft);border-radius:14px}
 .step button{width:40px;height:44px;font-size:1.3rem;font-weight:700;color:var(--brand)}
 .step span{min-width:20px;text-align:center;font-weight:700}
+#trk .pbox,#rpop .pbox{max-height:92dvh;overflow:auto;overscroll-behavior:contain}.xrow{position:sticky;top:0;height:0;margin:-26px -22px 26px;z-index:3}.xb{position:absolute;top:10px;right:10px;width:40px;height:40px;min-height:0;padding:0;border-radius:50%;background:var(--line);color:var(--ink);font-size:1.15rem;line-height:1;display:grid;place-items:center}
 .qrbox{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:10px;flex-wrap:wrap}#typ .pbox{max-height:92dvh;overflow:auto}.qrbox img,.qr{width:200px;height:200px;max-width:100%;border-radius:10px;background:#fff;margin:6px 0}
 .sect{font-size:1.15rem;margin:4px 0 12px}
 .shopcard{display:flex;gap:14px;align-items:center;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:22px;padding:14px;margin-bottom:12px;box-shadow:0 3px 12px rgba(20,83,45,.08)}
@@ -215,9 +216,9 @@ html{-webkit-tap-highlight-color:transparent}::selection{background:var(--brand)
 <button class="order" id="popok">Xem thực đơn</button></div></div>
 <div class="toast" id="toast" role="status"><span>🎉</span><div id="toastt"></div></div>
 <div class="pop" id="typ" role="dialog" aria-modal="true" hidden><div class="pbox"><svg class="chk" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="3"/><path d="M14 27l8 8 16-17" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><h2>Cảm ơn bạn đã đặt hàng! 🎉</h2><p id="typt"></p><div id="typi" style="text-align:left;margin-bottom:12px;max-height:30dvh;overflow:auto"></div><button class="order" id="typok">Tuyệt vời</button><button class="back" id="typtr" style="margin-top:6px">📦 Theo dõi đơn hàng</button></div></div>
-<div class="pop" id="trk" role="dialog" aria-modal="true" hidden><div class="pbox"><h2>Theo dõi đơn hàng</h2><p>Nhập mã đơn và số điện thoại đã đặt.</p><input id="tcode" placeholder="Mã đơn (LT-0101-1234)" autocapitalize="characters"><input id="tphone" inputmode="tel" placeholder="Số điện thoại"><button class="order" id="tgo">Kiểm tra</button><div class="msg" id="tres" hidden style="text-align:left"></div><div id="thist" style="text-align:left;margin-top:8px"></div><button class="back" id="tclose" style="margin-top:8px">Đóng</button></div></div>
+<div class="pop" id="trk" role="dialog" aria-modal="true" hidden><div class="pbox"><div class="xrow"><button class="xb" type="button" aria-label="Đóng">✕</button></div><h2>Theo dõi đơn hàng</h2><p>Nhập mã đơn và số điện thoại đã đặt.</p><input id="tcode" placeholder="Mã đơn (LT-0101-1234)" autocapitalize="characters"><input id="tphone" inputmode="tel" placeholder="Số điện thoại"><button class="order" id="tgo">Kiểm tra</button><div class="msg" id="tres" hidden style="text-align:left"></div><div id="thist" style="text-align:left;margin-top:8px"></div><button class="back" id="tclose" style="margin-top:8px">Đóng</button></div></div>
 <div class="pop" id="rpop" role="dialog" aria-modal="true" aria-labelledby="rtitle" hidden>
-<div class="pbox"><h2 id="rtitle">Đánh giá quán</h2><p>Chỉ đánh giá được khi đơn đã giao. Nhập mã đơn (dạng LT-0101-1234) rồi chạm sao để đổi (mặc định 5 sao).</p>
+<div class="pbox"><div class="xrow"><button class="xb" type="button" aria-label="Đóng">✕</button></div><h2 id="rtitle">Đánh giá quán</h2><p>Chỉ đánh giá được khi đơn đã giao. Nhập mã đơn (dạng LT-0101-1234) rồi chạm sao để đổi (mặc định 5 sao).</p>
 <input id="rcode" placeholder="Mã đơn" autocapitalize="characters">
 <div class="stars" id="stars"><button data-star="1" aria-label="1 sao">☆</button><button data-star="2" aria-label="2 sao">☆</button><button data-star="3" aria-label="3 sao">☆</button><button data-star="4" aria-label="4 sao">☆</button><button data-star="5" aria-label="5 sao">☆</button></div>
 <textarea id="rcmt" rows="3" placeholder="Nhận xét về món, quán (không bắt buộc)"></textarea>
@@ -423,6 +424,8 @@ async function sendDish(){const T=TR,m=$('dmsg');if(!T)return;m.hidden=false;con
  b.disabled=false}
 function openTrack(){$('thist').innerHTML=histHtml();$('tcode').value=lastCode();$('tres').hidden=true;$('trk').hidden=false}
 $('tclose').onclick=()=>{$('trk').hidden=true};
+$('trk').querySelector('.xb').onclick=()=>{$('trk').hidden=true};$('trk').onclick=e=>{if(e.target===$('trk'))$('trk').hidden=true};
+$('rpop').querySelector('.xb').onclick=()=>{$('rpop').hidden=true};$('rpop').onclick=e=>{if(e.target===$('rpop'))$('rpop').hidden=true};
 $('tgo').onclick=async()=>{const m=$('tres');m.hidden=false;m.textContent='Đang kiểm tra…';
  try{const r=await (await fetch(API_URL+'?'+new URLSearchParams({track:1,code:$('tcode').value.trim(),phone:$('tphone').value.trim()}))).json();
   if(!r.ok){m.textContent=r.msg||'Không tìm thấy đơn.';return}
