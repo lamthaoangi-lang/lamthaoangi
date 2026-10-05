@@ -23,7 +23,8 @@ pre{white-space:pre-wrap;font:inherit;background:#f4f8f5;border-radius:10px;padd
 .login{max-width:340px;margin:18vh auto;text-align:center}
 table{width:100%;border-collapse:collapse;font-size:.9rem}td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}th{color:var(--mute);font-weight:600}.big{font-size:1.5rem;font-weight:800;color:var(--brand)}
 .seg{display:flex;gap:6px;margin-top:8px}.seg button{flex:1;padding:9px 4px}.gh{font-size:.95rem;color:var(--brand);margin:14px 2px 8px}.qk{padding:10px}
-.sv{position:fixed;left:0;right:0;bottom:0;z-index:4;background:var(--bg);padding:10px;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.sv[hidden]{display:none}.sv button{display:block;max-width:700px;margin:0 auto;width:100%;padding:14px;font-size:1rem}.sv button:disabled{opacity:.6}body{padding-bottom:90px}</style></head><body>
+.sv{position:fixed;left:0;right:0;bottom:0;z-index:4;background:var(--bg);padding:10px;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.sv[hidden]{display:none}.sv button{display:block;max-width:700px;margin:0 auto;width:100%;padding:14px;font-size:1rem}.sv button:disabled{opacity:.6}body{padding-bottom:90px}
+.mv{display:flex;gap:6px;margin-top:8px}.mv button{flex:1;padding:8px 2px;font-size:.85rem}button:disabled{opacity:.4;cursor:default}.rk{display:inline-block;min-width:26px;text-align:center;background:var(--brand);color:#fff;border-radius:99px;font-size:.78rem;padding:1px 8px;margin-right:6px}</style></head><body>
 <div class="w"><h1>🛠️ Quản trị Lâm Thao Ăn Gì</h1></div>
 <nav id="nav" hidden><button data-v="shops">🏪 Quán</button><button data-v="items">🍜 Món</button><button data-v="orders">📦 Đơn</button><button data-v="rates">⭐ Đánh giá</button><button data-v="rev">📊 Doanh thu</button><button data-v="cfg">⚙️ Cài đặt</button><button data-reload>↻</button></nav>
 <div class="w" id="main"><div class="login c"><b>Nhập mật khẩu quản trị</b><div class="g"><input id="pw" type="password" autocomplete="current-password"><button class="p" id="go">Vào</button></div></div></div>
@@ -46,12 +47,26 @@ $('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
 function pick(cb,max){const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{if(!f.files[0])return;const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82).split(',')[1])};im.src=URL.createObjectURL(f.files[0])};f.click()}
 const get=c=>{const o={};c.querySelectorAll('[data-f]').forEach(i=>o[i.dataset.f]=i.type==='checkbox'?i.checked:i.value.trim());return o};
 const EMAIL_RE=/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
-const shopRow=(s,i)=>`<div class="c" data-t="shop"><div class="hd">${thumb(s.logo)}<div><b>${esc(s.name)}</b><br><small>${s.items.length} món${s.show?'':' · ĐANG ẨN'}${s.busy?' · 🔴 ĐANG BẬN':''}${s.email?' · ✉️ '+esc(s.email):' · ✉️ chưa có email'}</small></div></div>
+const BADGES=[['','Không có nhãn'],['hot','🔥 Bán chạy'],['star','⭐ Nổi bật'],['new','🆕 Quán mới'],['promo','🎁 Khuyến mãi'],['fav','💚 Yêu thích']];
+const badgeOpts=v=>BADGES.map(([k,l])=>`<option value="${k}" ${k===(v||'')?'selected':''}>${l}</option>`).join('');
+const mvRow=i=>{const n=D.shops.length;return `<div class="mv"><button data-mv="top" data-mi="${i}" ${i?'':'disabled'}>⏫ Lên đầu</button><button data-mv="up" data-mi="${i}" ${i?'':'disabled'}>↑ Lên</button><button data-mv="down" data-mi="${i}" ${i<n-1?'':'disabled'}>↓ Xuống</button><button data-mv="bottom" data-mi="${i}" ${i<n-1?'':'disabled'}>⏬ Cuối</button></div>`};
+function snap(){const m={};document.querySelectorAll('#main [data-t=shop]').forEach(c=>{m[c.dataset.n]=get(c)});return m}
+function restore(m){document.querySelectorAll('#main [data-t=shop]').forEach(c=>{const v=m[c.dataset.n];if(!v)return;c.querySelectorAll('[data-f]').forEach(i=>{if(!(i.dataset.f in v))return;if(i.type==='checkbox')i.checked=v[i.dataset.f];else i.value=v[i.dataset.f]})})}
+async function moveShop(i,dir){
+ const a=D.shops,n=a.length,j=dir==='up'?i-1:dir==='down'?i+1:dir==='top'?0:n-1;
+ if(j<0||j>=n||j===i)return;
+ const draft=snap(),s=a.splice(i,1)[0];a.splice(j,0,s);render();restore(draft); // giữ nguyên chữ đang gõ dở ở các quán
+ const el=[...document.querySelectorAll('#main [data-t=shop]')].find(c=>c.dataset.n===s.name);if(el)el.scrollIntoView({block:'center',behavior:'smooth'});
+ const r=await call({act:'saveOrder',names:a.map(x=>x.name)});
+ if(r.ok)toast('Đã đổi thứ tự ✓');else{toast(r.msg||'Lỗi lưu thứ tự');await load()}
+}
+const shopRow=(s,i)=>`<div class="c" data-t="shop" data-n="${esc(s.name)}"><div class="hd">${thumb(s.logo)}<div><span class="rk">${i+1}</span><b>${esc(s.name)}</b><br><small>${s.items.length} món · 🛒 ${s.sold||0} đơn đã bán${s.show?'':' · ĐANG ẨN'}${s.busy?' · 🔴 ĐANG BẬN':''}${s.email?' · ✉️ '+esc(s.email):' · ✉️ chưa có email'}</small></div></div>
 <label>Logo quán (dán link hoặc bấm Tải ảnh)</label><div class="g"><input data-f="logo" value="${esc(s.logo)}"><button data-up="logo">Tải ảnh</button></div>
 <label>Mô tả ngắn: quán bán gì (VD: Trà sữa · Cà phê · Ăn vặt)</label><input data-f="desc" value="${esc(s.desc)}">
 <label>✉️ Gmail nhận đơn của quán (khách đặt món của quán này thì quán nhận mail; để trống = quán không nhận mail)</label><input data-f="email" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com" value="${esc(s.email)}">
+<label>Nhãn hiển thị cạnh tên quán trên trang khách</label><select data-f="badge">${badgeOpts(s.badge)}</select>
 <label class="ck"><input type="checkbox" data-f="show" ${s.show?'checked':''}> Hiện quán trên web</label>
-<div class="g"><button class="${s.busy?'p':'d'}" data-busy="${i}">${s.busy?'🟢 Mở lại quán':'🔴 Đóng quán (bận)'}</button><button class="p" data-saveshop="${i}">Lưu quán</button><button data-menu="${i}">Sửa món ›</button></div></div>`;
+<div class="g"><button class="${s.busy?'p':'d'}" data-busy="${i}">${s.busy?'🟢 Mở lại quán':'🔴 Đóng quán (bận)'}</button><button class="p" data-saveshop="${i}">Lưu quán</button><button data-menu="${i}">Sửa món ›</button></div>${mvRow(i)}</div>`;
 const itemRow=it=>`<div class="c" data-t="item" data-row="${it.row||0}"><div class="hd">${thumb(it.img,esc(it.emoji)||'🍽️')}<b>${it.row?esc(it.name):'➕ Thêm món mới'}</b></div>
 <input data-f="name" placeholder="Tên món" value="${esc(it.name)}"><div class="g2" style="margin-top:6px"><input data-f="price" inputmode="numeric" placeholder="Giá (VD 25000)" value="${esc(it.price)}"><input data-f="emoji" placeholder="Emoji" value="${esc(it.emoji)}"></div>
 <input data-f="desc" placeholder="Mô tả món" style="margin-top:6px" value="${esc(it.desc)}"><label>Nhóm món</label><select data-f="cat">${catOpts(it.cat)}</select>
@@ -104,7 +119,7 @@ async function saveAll(b){
    const cards=[...document.querySelectorAll('#main [data-t=shop]')];let n=0,bad=0;
    for(let i=0;i<cards.length;i++){
     const s=D.shops[i],v=get(cards[i]);if(!s)continue;
-    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show&&v.email===String(s.email||''))continue;
+    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show&&v.email===String(s.email||'')&&v.badge===String(s.badge||''))continue;
     if(v.email&&!EMAIL_RE.test(v.email)){toast('Email của quán "'+s.name+'" chưa đúng định dạng');bad++;continue}
     b.textContent='Đang lưu '+s.name+'…';
     const r=await call({act:'saveShop',name:s.name,...v,busy:s.busy});r.ok?n++:bad++;
@@ -148,6 +163,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
  if(d.addnew!==undefined){b.closest('.c').insertAdjacentHTML('beforebegin',itemRow(BLANK));return}
  if(d.v){V=d.v;if(V==='rev'&&!REV){render();const r=await call({act:'report'});if(r.ok)REV=r.rows;else toast(r.msg||'Lỗi')}render();return}
  if(d.reload!==undefined){REV=null;await load();if(V==='rev'){const r=await call({act:'report'});if(r.ok)REV=r.rows;render()}toast('Đã tải lại');return}
+ if(d.mv!==undefined){b.disabled=true;await moveShop(+d.mi,d.mv);return}
  if(d.menu!==undefined){CUR=D.shops[+d.menu].name;V='items';render();scrollTo(0,0);return}
  if(d.up){const i=c.querySelector('[data-f='+d.up+']');pick(async x=>{toast('Đang tải ảnh…');const r=await call({act:'upload',data:x});if(r.ok){i.value=r.url;toast('Đã tải ảnh. Nhớ bấm Lưu.')}else toast(r.msg)},d.up==='logo'?300:700);return}
  if(d.im){IM=d.im;try{localStorage.setItem('im',IM)}catch(e){}render();return}
