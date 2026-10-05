@@ -105,6 +105,7 @@ button{transition:transform .14s,box-shadow .2s,filter .2s,background .2s}button
 .pbox{animation:pp .45s cubic-bezier(.2,.9,.3,1.3)}.pbox .chk{color:var(--brand)}
 .chk circle{stroke-dasharray:151;stroke-dashoffset:151;animation:dr .6s .1s forwards}.chk path{stroke-dasharray:40;stroke-dashoffset:40;animation:dr .4s .65s forwards}
 .toast{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:12px;right:12px;max-width:520px;margin:0 auto;z-index:30;background:var(--brand);color:var(--on);border-radius:18px;padding:14px 16px;display:flex;gap:12px;align-items:center;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.3);transform:translateY(-150%);transition:transform .6s cubic-bezier(.2,.9,.3,1.15)}.toast.on{transform:none}.toast span{font-size:1.7rem}
+.rt{color:#b7791f;font-size:.78rem;font-weight:700;margin-left:6px}.drow{padding:10px 0;border-top:1px solid var(--line)}.dstars{display:flex;gap:2px;margin:2px 0 4px}.dstars button{font-size:1.7rem;line-height:1;color:#f5a623;min-width:44px;min-height:44px}.dcmt{min-height:42px;margin-bottom:0}
 .tl{display:flex;gap:4px;margin:10px 0}.tl span{flex:1;text-align:center;font-size:.72rem;padding:8px 2px;border-radius:8px;background:var(--line);color:var(--mute)}.tl span.on{background:var(--brand);color:var(--on);font-weight:700}
 #trk pre{white-space:pre-wrap;font:inherit;margin-top:8px;font-size:.9rem}
 @keyframes up{from{opacity:0;transform:translateY(16px)}}@keyframes flt{50%{transform:rotate(-12deg) translateY(-8px)}}@keyframes bump{40%{transform:scale(1.06)}}
@@ -291,7 +292,7 @@ const bdg=k=>BD[k]?`<span class="bdg b-${k}">${BD[k][0]} ${BD[k][1]}</span>`:'';
 const soldTxt=n=>n>0?'🛒 Đã bán '+Number(n).toLocaleString('vi-VN')+' đơn':'';
 const logo=(x,c)=>{const u=imgUrl(x.logo);return `<div class="${c}" aria-hidden="true">${esc(x.emoji)}${u?`<img src="${esc(u)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`:''}</div>`};
 const dish=m=>{const q=cart[m.id]||0,u=imgUrl(m.img);
- return `<div class="dish${m.out?' out':''}" data-did="${m.id}"><div class="ph">${esc(m.emoji)}${u?`<img src="${esc(u)}" alt="${esc(m.name)}" loading="lazy" onerror="this.remove()">`:''}</div><div class="info"><h3>${esc(m.name)}</h3><p>${esc(m.desc)}</p><span class="price">${money(m.price)}</span></div>${m.out?'<span class="tag">Hết món</span>':q?`<div class="step"><button data-m="${m.id}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${m.id}" aria-label="Tăng">+</button></div>`:`<button class="add" data-a="${m.id}" aria-label="Thêm ${esc(m.name)}">+</button>`}</div>`};
+ return `<div class="dish${m.out?' out':''}" data-did="${m.id}"><div class="ph">${esc(m.emoji)}${u?`<img src="${esc(u)}" alt="${esc(m.name)}" loading="lazy" onerror="this.remove()">`:''}</div><div class="info"><h3>${esc(m.name)}</h3><p>${esc(m.desc)}</p><span class="price">${money(m.price)}${m.cnt?`<span class="rt">★ ${m.avg} (${m.cnt})</span>`:''}</span></div>${m.out?'<span class="tag">Hết món</span>':q?`<div class="step"><button data-m="${m.id}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${m.id}" aria-label="Tăng">+</button></div>`:`<button class="add" data-a="${m.id}" aria-label="Thêm ${esc(m.name)}">+</button>`}</div>`};
 const isBusy=n=>{const s=SHOPS.find(x=>x.name===n);return !!(s&&s.busy)};
 const mini=m=>{const u=imgUrl(m.img);return `<span class="mini">${esc(m.emoji)}${u?`<img src="${esc(u)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`:''}</span>`};
 const fq=x=>!Q||(x.name+' '+x.desc+' '+MENU.filter(m=>m.shop===x.name).map(m=>m.name).join(' ')).toLowerCase().includes(Q);
@@ -333,6 +334,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(d.trk!==undefined){openTrack();return}
  if(d.re!==undefined){reorder(+d.re);return}
  if(d.rate!==undefined){openRate(d.rate);return}
+ if(d.dstar!==undefined){pickStar(d.dstar);return}
+ if(d.dsend!==undefined){sendDish();return}
  if(d.star!==undefined){setStar(+d.star);return}
  if(d.a!==undefined){if(MENU[d.a].out)return;if(isBusy(MENU[d.a].shop)){slide('Quán đang bận, bạn quay lại sau nhé!',3000);return}cart[d.a]=(cart[d.a]||0)+1;upd(d.a);drawCart()}
  if(d.m!==undefined){if(--cart[d.m]<=0)delete cart[d.m];upd(d.m);drawCart()}
@@ -404,13 +407,28 @@ function thanks(code,pay,items,total){$('typi').innerHTML=items.map(x=>'<div cla
 $('typok').onclick=()=>{$('typ').hidden=true};$('typtr').onclick=()=>{$('typ').hidden=true;openTrack()};
 function histHtml(){let H=[];try{H=JSON.parse(localStorage.getItem('ltho')||'[]')}catch(e){}if(!H.length)return '';return '<b>Đơn đã đặt</b>'+H.map((o,i)=>'<div class="oi" style="justify-content:space-between"><div><b>'+esc(o.code)+'</b><br><small>'+new Date(o.t).toLocaleDateString('vi-VN')+' · '+money(o.total)+' · '+o.items.reduce((s,x)=>s+x.qty,0)+' món</small></div><button class="trkbtn" data-re="'+i+'">Đặt lại</button></div>').join('')}
 function reorder(i){let H=[];try{H=JSON.parse(localStorage.getItem('ltho')||'[]')}catch(e){}const o=H[i];if(!o)return;let n=0;o.items.forEach(x=>{const k=MENU.findIndex(m=>m.shop===x.shop&&m.name===x.name&&!m.out&&!isBusy(m.shop));if(k>=0){cart[k]=(cart[k]||0)+x.qty;n++}});draw();drawCart();$('trk').hidden=true;slide(n?'Đã thêm '+n+' món vào giỏ hàng':'Các món này hiện không còn bán',3000);if(n)sheet(true)}
+let TR=null;
+function dishRateHtml(){const T=TR;if(!T||!T.items.length)return '';let left=0;
+ const rows=T.items.map((x,i)=>{const done=T.rated.indexOf(x.shop+'|'+x.name)>=0;if(!done)left++;
+  return '<div class="drow" id="dr'+i+'"><div><b>'+esc(x.name)+'</b><br><small>'+esc(x.shop)+'</small></div>'+(done?'<span class="tag" style="display:inline-block;margin-top:6px">Đã đánh giá ✓</span>':'<div class="dstars">'+[1,2,3,4,5].map(n=>'<button data-dstar="'+i+':'+n+'" aria-label="'+n+' sao">'+((T.sel[i]||0)>=n?'★':'☆')+'</button>').join('')+'</div><input class="dcmt" id="dc'+i+'" maxlength="150" placeholder="Nhận xét món (không bắt buộc)">')+'</div>'}).join('');
+ return '<div id="drate" style="margin-top:12px"><b>⭐ Đánh giá món ăn</b>'+rows+(left?'<button class="order" data-dsend="1" id="dsend" style="margin-top:8px">Gửi đánh giá món</button>':'')+'<div class="msg" id="dmsg" hidden></div></div>'}
+function pickStar(v){const[i,n]=v.split(':').map(Number);if(!TR)return;TR.sel[i]=n;document.querySelectorAll('#dr'+i+' .dstars button').forEach((b,k)=>b.textContent=k<n?'★':'☆')}
+async function sendDish(){const T=TR,m=$('dmsg');if(!T)return;m.hidden=false;const data=[];
+ T.items.forEach((x,i)=>{const s=T.sel[i];if(s&&T.rated.indexOf(x.shop+'|'+x.name)<0)data.push({shop:x.shop,dish:x.name,star:s,cmt:($('dc'+i)||{value:''}).value.trim()})});
+ if(!data.length){m.textContent='Hãy chạm số sao cho ít nhất một món.';return}
+ const b=$('dsend');b.disabled=true;m.textContent='Đang gửi…';
+ try{const r=await (await fetch(API_URL+'?'+new URLSearchParams({rateDish:1,code:T.code,phone:T.phone,data:JSON.stringify(data)}))).json();
+  if(r.ok){data.forEach(d=>T.rated.push(d.shop+'|'+d.dish));$('drate').outerHTML=dishRateHtml();const mm=$('dmsg');mm.hidden=false;mm.textContent='Cảm ơn bạn đã đánh giá! ❤️';load();return}
+  m.textContent=r.msg||'Chưa gửi được, thử lại nhé.'}catch(e){m.textContent='Gửi chưa được. Vui lòng kiểm tra mạng và thử lại.'}
+ b.disabled=false}
 function openTrack(){$('thist').innerHTML=histHtml();$('tcode').value=lastCode();$('tres').hidden=true;$('trk').hidden=false}
 $('tclose').onclick=()=>{$('trk').hidden=true};
 $('tgo').onclick=async()=>{const m=$('tres');m.hidden=false;m.textContent='Đang kiểm tra…';
  try{const r=await (await fetch(API_URL+'?'+new URLSearchParams({track:1,code:$('tcode').value.trim(),phone:$('tphone').value.trim()}))).json();
   if(!r.ok){m.textContent=r.msg||'Không tìm thấy đơn.';return}
   const S=['Mới','Đã báo quán','Đang giao','Đã giao'],i=S.findIndex(x=>String(r.status).startsWith(x));
-  m.innerHTML='<b>'+esc(r.code)+'</b> · '+money(r.total)+(r.status==='Hủy'?'<br><b style="color:var(--accent)">Đơn đã hủy</b>':'<div class="tl">'+S.map((x,k)=>'<span class="'+(k<=i?'on':'')+'">'+x+'</span>').join('')+'</div>')+'<pre>'+esc(r.detail)+'</pre>'+(i===3?'Đơn đã giao. Bạn có thể đánh giá quán ở trang quán nhé!':'')
+  m.innerHTML='<b>'+esc(r.code)+'</b> · '+money(r.total)+(r.status==='Hủy'?'<br><b style="color:var(--accent)">Đơn đã hủy</b>':'<div class="tl">'+S.map((x,k)=>'<span class="'+(k<=i?'on':'')+'">'+x+'</span>').join('')+'</div>')+'<pre>'+esc(r.detail)+'</pre>'+(i===3?'Đơn đã giao. Cảm ơn bạn! Mời bạn đánh giá món ăn bên dưới, hoặc đánh giá quán ở trang quán.':'');
+  TR=null;if(i===3&&Array.isArray(r.items)&&r.items.length){TR={code:r.code,phone:$('tphone').value.trim(),items:r.items,rated:r.rated||[],sel:{}};m.insertAdjacentHTML('beforeend',dishRateHtml())}
  }catch(e){m.textContent='Chưa kiểm tra được, thử lại nhé.'}};
 function closePop(){$('pop').hidden=true;if(window.PEND){const t=window.PEND;window.PEND=null;setTimeout(()=>slide(t,5500),400)}}
 $('popok').onclick=closePop;$('pop').onclick=e=>{if(e.target===$('pop'))closePop()};
