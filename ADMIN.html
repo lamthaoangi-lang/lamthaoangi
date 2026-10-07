@@ -60,14 +60,26 @@ async function moveShop(i,dir){
  const r=await call({act:'saveOrder',names:a.map(x=>x.name)});
  if(r.ok)toast('Đã đổi thứ tự ✓');else{toast(r.msg||'Lỗi lưu thứ tự');await load()}
 }
-const shopRow=(s,i)=>`<div class="c" data-t="shop" data-n="${esc(s.name)}"><div class="hd">${thumb(s.logo)}<div><span class="rk">${i+1}</span><b>${esc(s.name)}</b><br><small>${s.items.length} món · 🛒 ${s.sold||0} đơn đã bán${s.show?'':' · ĐANG ẨN'}${s.busy?' · 🔴 ĐANG BẬN':''}${s.email?' · ✉️ '+esc(s.email):' · ✉️ chưa có email'}</small></div></div>
+// ----- Khách của quán: xem SĐT, địa chỉ, Google Maps và gửi cho quán (cần bật quyền) -----
+let OC=new Set();
+const hasShop=(d,n)=>String(d||'').split('\n').some(l=>l.trim()==='🏪 '+n);
+const shopLines=(d,n)=>{let on=false;const out=[];String(d||'').split('\n').forEach(l=>{const m=l.match(/^🏪 (.+)$/);if(m){on=m[1].trim()===n;return}if(on){const t=l.match(/^\s*•\s*(.+)$/);if(t)out.push(t[1])}});return out};
+const custHtml=s=>{
+ const L=(D.orders||[]).filter(o=>hasShop(o.detail,s.name)).slice(0,20);
+ const can=s.share&&s.email;
+ const note=!s.share?'Quán này CHƯA được cấp quyền nhận thông tin khách. Bật ô "Cho phép gửi SĐT + vị trí" rồi bấm Lưu quán để gửi được.':!s.email?'Quán chưa có Gmail nhận đơn, hãy nhập email ở trên.':'Đã cấp quyền: đơn mới của quán sẽ tự gửi kèm SĐT + Google Maps. Bấm "Gửi cho quán" để gửi lại một đơn cũ.';
+ return `<div style="margin-top:10px;border-top:1.5px dashed var(--line);padding-top:8px"><small style="color:var(--mute)">${note}</small>`+(L.length?L.map(o=>`<div class="c" style="margin:8px 0 0;background:#f9fbf9"><b>${esc(o.code)}</b> <small>${esc(o.time)} · ${esc(o.status)}</small><br>👤 ${esc(o.name)}<br>📞 <a href="tel:${esc(o.phone)}" style="font-weight:700">${esc(o.phone)}</a> · <a href="https://zalo.me/${esc(String(o.phone).replace(/\D/g,''))}" target="_blank" rel="noopener">Zalo</a><br><small>📍 ${esc(o.addr)}</small>${mapOk(o.map)?` · <a href="${esc(o.map)}" target="_blank" rel="noopener">Mở Google Maps</a>`:' · <small>(khách không chia sẻ vị trí)</small>'}<pre>${esc(shopLines(o.detail,s.name).join('\n'))}</pre><small>${esc(o.pay||'')}${o.note?' · 📝 '+esc(o.note):''}</small><div class="g"><button class="${can?'p':''}" ${can?'':'disabled'} data-sendshop="${esc(o.code)}" data-shop="${esc(s.name)}" data-row="${o.row}">📤 Gửi cho quán</button></div></div>`).join(''):'<p style="margin:8px 0;color:var(--mute)">Chưa có đơn nào của quán này.</p>')+'</div>'};
+const shopRow=(s,i)=>`<div class="c" data-t="shop" data-n="${esc(s.name)}"><div class="hd">${thumb(s.logo)}<div><span class="rk">${i+1}</span><b>${esc(s.name)}</b><br><small>${s.items.length} món · 🛒 ${s.sold||0} đơn đã bán${s.show?'':' · ĐANG ẨN'}${s.busy?' · 🔴 ĐANG BẬN':''}${s.email?' · ✉️ '+esc(s.email):' · ✉️ chưa có email'}${s.share?' · 📤 nhận SĐT+bản đồ khách':''}</small></div></div>
 <label>✏️ Tên quán (sửa rồi bấm "Đổi tên")</label><div class="g"><input data-f="newname" value="${esc(s.name)}"><button data-rename="${i}">Đổi tên</button></div>
 <label>Logo quán (dán link hoặc bấm Tải ảnh)</label><div class="g"><input data-f="logo" value="${esc(s.logo)}"><button data-up="logo">Tải ảnh</button></div>
 <label>Mô tả ngắn: quán bán gì (VD: Trà sữa · Cà phê · Ăn vặt)</label><input data-f="desc" value="${esc(s.desc)}">
 <label>✉️ Gmail nhận đơn của quán (khách đặt món của quán này thì quán nhận mail; để trống = quán không nhận mail)</label><input data-f="email" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com" value="${esc(s.email)}">
 <label>Nhãn hiển thị cạnh tên quán trên trang khách</label><select data-f="badge">${badgeOpts(s.badge)}</select>
 <label class="ck"><input type="checkbox" data-f="show" ${s.show?'checked':''}> Hiện quán trên web</label>
-<div class="g"><button class="${s.busy?'p':'d'}" data-busy="${i}">${s.busy?'🟢 Mở lại quán':'🔴 Đóng quán (bận)'}</button><button class="p" data-saveshop="${i}">Lưu quán</button><button data-menu="${i}">Sửa món ›</button><button class="d" data-delshop="${i}">🗑️ Xóa quán</button></div>${mvRow(i)}</div>`;
+<label class="ck"><input type="checkbox" data-f="share" ${s.share?'checked':''}> 📤 Cho phép gửi SĐT + vị trí Google Maps của khách cho quán này</label>
+<small style="color:var(--mute);display:block;margin:2px 0 0 26px">Tắt = email/Telegram của quán chỉ có món, tên khách, địa chỉ. Bật = có thêm SĐT, Zalo và link Google Maps. Nhớ bấm Lưu quán.</small>
+<div class="g"><button class="${s.busy?'p':'d'}" data-busy="${i}">${s.busy?'🟢 Mở lại quán':'🔴 Đóng quán (bận)'}</button><button class="p" data-saveshop="${i}">Lưu quán</button><button data-menu="${i}">Sửa món ›</button><button class="d" data-delshop="${i}">🗑️ Xóa quán</button></div>
+<div class="g"><button data-cust="${i}" style="width:100%">${OC.has(s.name)?'🔽 Ẩn khách của quán':'👥 Xem khách + Google Maps của quán'}</button></div>${OC.has(s.name)?custHtml(s):''}${mvRow(i)}</div>`;
 const itemRow=it=>`<div class="c" data-t="item" data-row="${it.row||0}"><div class="hd">${thumb(it.img,esc(it.emoji)||'🍽️')}<b>${it.row?esc(it.name):'➕ Thêm món mới'}</b></div>
 <input data-f="name" placeholder="Tên món" value="${esc(it.name)}"><div class="g2" style="margin-top:6px"><input data-f="price" inputmode="numeric" placeholder="Giá (VD 25000)" value="${esc(it.price)}"><input data-f="emoji" placeholder="Emoji" value="${esc(it.emoji)}"></div>
 <input data-f="desc" placeholder="Mô tả món" style="margin-top:6px" value="${esc(it.desc)}"><label>Nhóm món</label><select data-f="cat">${catOpts(it.cat)}</select>
@@ -129,7 +141,7 @@ async function saveAll(b){
    const cards=[...document.querySelectorAll('#main [data-t=shop]')];let n=0,bad=0;
    for(let i=0;i<cards.length;i++){
     const s=D.shops[i],v=get(cards[i]);if(!s)continue;
-    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show&&v.email===String(s.email||'')&&v.badge===String(s.badge||''))continue;
+    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show&&v.email===String(s.email||'')&&v.badge===String(s.badge||'')&&v.share===!!s.share)continue;
     if(v.email&&!EMAIL_RE.test(v.email)){toast('Email của quán "'+s.name+'" chưa đúng định dạng');bad++;continue}
     b.textContent='Đang lưu '+s.name+'…';
     const r=await call({act:'saveShop',name:s.name,...v,busy:s.busy});r.ok?n++:bad++;
@@ -175,6 +187,8 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
  if(d.reload!==undefined){REV=null;await load();if(V==='rev'){const r=await call({act:'report'});if(r.ok)REV=r.rows;render()}toast('Đã tải lại');return}
  if(d.mv!==undefined){b.disabled=true;await moveShop(+d.mi,d.mv);return}
  if(d.menu!==undefined){CUR=D.shops[+d.menu].name;V='items';render();scrollTo(0,0);return}
+ if(d.cust!==undefined){const nm=D.shops[+d.cust].name,dr=snap();OC.has(nm)?OC.delete(nm):OC.add(nm);render();restore(dr);return}
+ if(d.sendshop!==undefined){if(!confirm('Gửi thông tin đơn '+d.sendshop+' (có SĐT + Google Maps của khách) cho quán "'+d.shop+'"?'))return;b.disabled=true;const q=await call({act:'sendShop',shop:d.shop,code:d.sendshop,row:+d.row});b.disabled=false;toast(q.ok?'Đã gửi cho quán ✓':(q.msg||'Lỗi'));return}
  if(d.up){const i=c.querySelector('[data-f='+d.up+']');pick(async x=>{toast('Đang tải ảnh…');const r=await call({act:'upload',data:x});if(r.ok){i.value=r.url;toast('Đã tải ảnh. Nhớ bấm Lưu.')}else toast(r.msg)},d.up==='logo'?300:700);return}
  if(d.im){IM=d.im;try{localStorage.setItem('im',IM)}catch(e){}render();return}
  if(d.qs){const s=D.shops.find(x=>x.name===CUR),it=s&&s.items.find(x=>x.row==d.row),q=await call({act:'setState',shop:CUR,row:+d.row,name:d.name,state:d.qs});if(q.ok){if(it)it.state=d.qs;render();toast('Đã cập nhật ✓')}else toast(q.msg||'Lỗi');return}
