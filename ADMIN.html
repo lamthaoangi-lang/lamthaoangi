@@ -39,7 +39,7 @@ const money=n=>Number(n||0).toLocaleString('vi-VN')+'đ';
 function imgUrl(u){u=String(u||'').trim();const m=u.match(/drive\.google\.com.*?(?:\/d\/|[?&]id=)([\w-]+)/);return m?'https://lh3.googleusercontent.com/d/'+m[1]+'=w200':u}
 const thumb=(u,e)=>`<span class="th">${u?`<img src="${esc(imgUrl(u))}" alt="" onerror="this.remove()">`:e||'🏪'}</span>`;
 function toast(t){const x=$('toast');x.textContent=t;x.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>x.style.display='none',2800)}
-async function call(o){o.admin=1;o.pass=PASS;try{return await (await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)})).json()}catch(e){return{ok:false,msg:'Lỗi mạng hoặc chưa triển khai phiên bản mới của Apps Script.'}}}
+async function call(o){o.admin=1;o.pass=PASS;const n=o.act==='load'?3:1;for(let i=0;i<n;i++){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),45000);try{return await (await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o),signal:ac.signal})).json()}catch(e){if(i<n-1)await new Promise(r=>setTimeout(r,1500*(i+1)))}finally{clearTimeout(tm)}}return{ok:false,msg:'Lỗi mạng hoặc chưa triển khai phiên bản mới của Apps Script.'}}
 async function load(){const r=await call({act:'load'});if(!r.ok){toast(r.msg||'Lỗi');if(!D){PASS='';$('nav').hidden=true}return false}
  D=r;if(!CUR||!D.shops.some(s=>s.name===CUR))CUR=D.shops[0]?D.shops[0].name:'';$('nav').hidden=false;render();return true}
 $('go').onclick=async()=>{PASS=$('pw').value;if(await load())try{sessionStorage.setItem('ap',PASS)}catch(e){}};

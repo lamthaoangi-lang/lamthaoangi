@@ -2,6 +2,8 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com" crossorigin><link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+<script>window.__E=Promise.race([fetch('https://script.google.com/macros/s/AKfycbwyheCMFxZJvm-lgD4Zm4ggdj8m984nfakQ1cIgEHGdLal1JfRh5HFS0knEpCz3dDlq/exec',{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.text()}),new Promise(function(r){setTimeout(function(){r(null)},15000)})]).catch(function(){return null});</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14532d"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Lâm Thao Ăn Gì"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="manifest" href="manifest.json"><link rel="canonical" href="https://lamthaoangi.io.vn/">
 <meta name="description" content="Lâm Thao Ăn Gì - website đặt đồ ăn, đồ uống tại Lâm Thao. Chọn món từ nhiều quán trong một đơn, đặt hàng online và giao tận nơi.">
@@ -273,14 +275,35 @@ function imgUrl(u){u=String(u||'').trim();if(!u)return '';
  if(/drive\.google\.com/.test(u)){const m=u.match(/\/d\/([\w-]+)/)||u.match(/[?&]id=([\w-]+)/);if(m)return 'https://lh3.googleusercontent.com/d/'+m[1]+'=w400'}
  return u}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function load(){
- let c=null;try{c=JSON.parse(localStorage.getItem('ltd')||'null')}catch(e){}
- if(c&&!MENU.length)build(c);
- try{const D=await Promise.race([fetch(API_URL).then(r=>r.json()),new Promise((_,no)=>setTimeout(no,20000))]);if(!D||typeof D!=='object')throw 0;try{localStorage.setItem('ltd',JSON.stringify(D))}catch(e){}build(D)}
- catch(e){if(!MENU.length)$('shops').innerHTML='<p class="empty">Không tải được thực đơn. Vui lòng kiểm tra mạng.<br><br><button class="add" style="width:auto;padding:0 18px;font-size:1rem" onclick="location.reload()">Tải lại</button></p>'}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let LOADING=null,LAST='',LT=0;
+function parseData(tx){const D=JSON.parse(tx);if(!D||typeof D!=='object'||D.error||!(Array.isArray(D)||Array.isArray(D.menu)))throw new Error('bad data');return D}
+function fetchData(ms){const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms);return fetch(API_URL,{signal:ac.signal,cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('http '+r.status);return r.text()}).then(parseData).finally(()=>clearTimeout(t))}
+function skel(msg){$('shops').innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>'+(msg?'<p class="empty">'+msg+'</p>':'')}
+function showErr(msg){$('shops').innerHTML='<p class="empty">'+(msg||'Không tải được thực đơn. Vui lòng kiểm tra mạng rồi thử lại.')+'<br><br><button class="add" style="width:auto;padding:0 18px;font-size:1rem" onclick="load()">Tải lại</button></p>'}
+function load(){
+ if(LOADING)return LOADING;
+ return LOADING=(async()=>{
+  // 1) Hiện ngay bản đã lưu lần trước (nếu có) để khách thấy quán tức thì
+  if(!MENU.length){let raw=null;try{raw=localStorage.getItem('ltd')}catch(e){}if(raw){try{build(parseData(raw));LAST=raw}catch(e){}}}
+  // 2) Lấy dữ liệu mới, tự thử lại tối đa 4 lần (Apps Script khởi động nguội có thể mất vài giây)
+  let D=null;const wait=[0,2000,5000,9000];
+  for(let i=0;i<wait.length&&!D;i++){
+   if(wait[i]){if(!MENU.length)skel('Máy chủ đang khởi động, bạn đợi chút nhé…');await sleep(wait[i])}
+   try{
+    if(i===0&&window.__E){const tx=await window.__E;window.__E=null;if(tx==null)throw 0;D=parseData(tx)}
+    else D=await fetchData(i?25000:15000);
+   }catch(e){D=null}
+  }
+  if(!D){if(!MENU.length)showErr();return}
+  LT=Date.now();const s=JSON.stringify(D);
+  if(s===LAST)return; // dữ liệu không đổi thì không vẽ lại, tránh giật
+  try{build(D);LAST=s;try{localStorage.setItem('ltd',s)}catch(e){}}
+  catch(e){console.error(e);if(!MENU.length)showErr('Có lỗi khi hiển thị thực đơn. Bấm Tải lại giúp mình nhé.')}
+ })().finally(()=>{LOADING=null});
 }
 function build(D){
- const keep=Object.keys(cart).filter(i=>MENU[i]).map(i=>[MENU[i].shop+'|'+MENU[i].name,cart[i]]);
+ let keep=Object.keys(cart).filter(i=>MENU[i]).map(i=>[MENU[i].shop+'|'+MENU[i].name,cart[i]]);if(!MENU.length&&!keep.length){try{keep=JSON.parse(localStorage.getItem('ltcart')||'[]')}catch(e){keep=[]}}
  const C=D.cfg||{};if(C.open!=null)OPEN=C.open;if(C.close!=null)CLOSE=C.close;if(C.min!=null)MIN_ORDER=C.min;PAUSE=!!C.pause;SHIP=C.ship||0;FREE=C.free||0;SHIPXA=C.shipXa||{};ALLDAY=!!C.allday;QR=C.qr!==false;applyQr();$('hrs').textContent=ALLDAY?'0h đến 24h':OPEN+'h đến '+CLOSE+'h';updOpen();
  if(!window.SL){window.SL=1;const bt=C.banner||'Chào mừng bạn đến Lâm Thao Ăn Gì! Giao tận nơi, nhận đơn '+OPEN+'h–'+CLOSE+'h.';if($('pop').hidden)setTimeout(()=>slide(bt,5500),500);else window.PEND=bt}
  MENU=Array.isArray(D)?D:(D.menu||[]);MENU.forEach((m,i)=>m.id=i);for(const k in cart)delete cart[k];keep.forEach(([k,q])=>{const i=MENU.findIndex(m=>m.shop+'|'+m.name===k);if(i>=0)cart[i]=q});
@@ -325,7 +348,9 @@ function drawCart(){
  return `<div class="line"><div class="oi">${mini(m)}<div>${esc(m.name)}<br><small>${esc(m.shop)} · ${money(m.price)}</small></div></div><div class="step"><button data-m="${i}" aria-label="Giảm">−</button><span>${q}</span><button data-a="${i}" aria-label="Tăng">+</button></div></div>`}).join(''):'<p class="empty">Giỏ hàng đang trống. Chọn món bạn thích để bắt đầu.</p>';
  const sf=shipFee(t);$('sub').textContent=money(t);$('total').textContent=$('total2').textContent=money(t+sf);const bs=baseShip();$('ship').textContent=bs===null?'Thỏa thuận sau':(sf?money(sf):'Miễn phí');$('count').textContent=c;{const f=$('fab');f.classList.remove('bump');void f.offsetWidth;f.classList.add('bump')}
  $('hint').textContent=t>0&&bs===null?'Phí giao hàng do quán thỏa thuận với bạn sau khi xác nhận đơn.':(bs>0&&FREE&&t>0&&t<FREE?'Mua thêm '+money(FREE-t)+' để được miễn phí giao hàng.':'');
+ saveCart();
 }
+function saveCart(){if(!MENU.length)return;try{localStorage.setItem('ltcart',JSON.stringify(Object.keys(cart).filter(i=>MENU[i]).map(i=>[MENU[i].shop+'|'+MENU[i].name,cart[i]])))}catch(e){}}
 function sheet(on){$('sheet').inert=!on;$('sheet').classList.toggle('on',on);$('bk').classList.toggle('on',on)}
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
  if(d.s!==undefined){location.hash='#'+encodeURIComponent(d.s);return}
@@ -378,7 +403,7 @@ $('order').onclick=async()=>{
  $('order').disabled=true;m.textContent='Đang gửi đơn…';
  try{
   const body=JSON.stringify({code,name,phone,addr,xa,note:$('note').value.trim(),map:MAP,pay,ship,items,total});let rs='ok';
-  try{rs=(await (await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body})).text()).trim()}
+  try{rs=(await (await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body,signal:AbortSignal.timeout?AbortSignal.timeout(30000):undefined})).text()).trim()}
   catch(e2){await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body})}
   if(rs==='closed'){m.textContent='Hiện quán đã đóng hoặc tạm nghỉ nhận đơn. Bạn quay lại sau nhé.';$('order').disabled=false;return}
   if(rs==='noqr'){QR=false;applyQr();m.textContent='Hiện quán tạm ngừng nhận chuyển khoản, bạn vui lòng chọn thanh toán tiền mặt nhé.';$('order').disabled=false;return}
@@ -386,7 +411,7 @@ $('order').onclick=async()=>{
   if(rs!=='ok'&&rs!=='dup'&&rs!=='empty'){m.textContent='Hệ thống chưa nhận được đơn của bạn. Vui lòng thử lại hoặc nhắn Facebook của chúng tôi (mục Liên hệ trợ giúp ở cuối trang).';$('order').disabled=false;return}
   if(rs==='empty'){m.textContent='Đơn chưa hợp lệ, hãy tải lại trang và chọn lại món.';$('order').disabled=false;return}
   m.innerHTML='<b>Đặt hàng thành công!</b><br>Mã đơn: <b>'+code+'</b><br>'+items.map(x=>'<div class="oi">'+mini(x)+'<div>'+x.qty+' × '+esc(x.name)+'<br><small>'+esc(x.shop)+'</small></div></div>').join('')+'<br>Phí giao: '+ship+'<br>Tổng cộng: <b>'+money(total)+'</b> ('+pay+')<br>Chúng tôi sẽ gọi xác nhận qua số '+esc(phone)+'.<br>Cần hỗ trợ? <a class="fbbtn" href="https://www.facebook.com/profile.php?id=61594936143580" target="_blank" rel="noopener">💬 Nhắn Facebook</a>'+(pay==='Chuyển khoản'?payBox(code,total):'')+'<br><small>Khi đơn đã giao, mời bạn đánh giá quán (cần mã đơn ở trên):</small>'+[...new Set(items.map(x=>x.shop))].map(sp=>'<button class="loc" data-rate="'+esc(sp)+'">⭐ Đánh giá '+esc(sp)+'</button>').join('');
-  try{localStorage.setItem('lastcode',code);const H=JSON.parse(localStorage.getItem('ltho')||'[]');H.unshift({code,t:Date.now(),total,items:items.map(x=>({shop:x.shop,name:x.name,qty:x.qty}))});localStorage.setItem('ltho',JSON.stringify(H.slice(0,10)));localStorage.setItem('ltcus',JSON.stringify({name,phone,xa}))}catch(e){}for(const k in cart)delete cart[k];MAP='';$('locmsg').textContent=LOCTXT;draw();drawCart();thanks(code,pay,items,total);
+  try{localStorage.setItem('lastcode',code);const H=JSON.parse(localStorage.getItem('ltho')||'[]');H.unshift({code,t:Date.now(),total,items:items.map(x=>({shop:x.shop,name:x.name,qty:x.qty}))});localStorage.setItem('ltho',JSON.stringify(H.slice(0,10)));localStorage.setItem('ltcus',JSON.stringify({name,phone,xa}))}catch(e){}for(const k in cart)delete cart[k];saveCart();MAP='';$('locmsg').textContent=LOCTXT;draw();drawCart();thanks(code,pay,items,total);
  }catch(e){m.textContent='Gửi đơn chưa được. Vui lòng kiểm tra mạng và thử lại.'}
  $('order').disabled=false;
 };
@@ -404,7 +429,7 @@ $('rsend').onclick=async()=>{const m=$('rmsg'),code=$('rcode').value.trim();m.hi
  $('rsend').disabled=false};
 function slide(t,ms){$('toastt').textContent=t;$('toast').classList.add('on');setTimeout(()=>$('toast').classList.remove('on'),ms||5000)}
 $('toast').onclick=()=>$('toast').classList.remove('on');
-$('q').oninput=()=>{Q=$('q').value.trim().toLowerCase();draw()};
+let QT;$('q').oninput=()=>{clearTimeout(QT);QT=setTimeout(()=>{Q=$('q').value.trim().toLowerCase();draw()},140)};
 const lastCode=()=>{try{return localStorage.getItem('lastcode')||''}catch(e){return ''}};
 function thanks(code,pay,items,total){$('typi').innerHTML=items.map(x=>'<div class="oi">'+mini(x)+'<div>'+x.qty+' × '+esc(x.name)+'</div></div>').join('');$('typt').innerHTML='Mã đơn của bạn: <b>'+esc(code)+'</b><br>Chúng tôi sẽ gọi xác nhận trong ít phút.'+(pay==='Chuyển khoản'?payBox(code,total):'');$('typ').hidden=false;try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}}
 $('typok').onclick=()=>{$('typ').hidden=true};$('typtr').onclick=()=>{$('typ').hidden=true;openTrack()};
@@ -441,7 +466,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePop();['rpop',
 $('pop').hidden=false;setTimeout(()=>{try{$('popok').focus({preventScroll:true})}catch(e){}},700); // popup chào mừng hiện MỖI LẦN vào hoặc tải lại web
 
 $('yr').textContent=new Date().getFullYear();setTh();addEventListener('resize',setTh);updOpen();setInterval(updOpen,60000);
-load();drawCart();setInterval(()=>{if(document.visibilityState==='visible'&&!$('sheet').classList.contains('on'))load()},90000);
+load();drawCart();setInterval(()=>{if(document.visibilityState==='visible'&&!$('sheet').classList.contains('on'))load()},120000);
+addEventListener('online',()=>load());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-LT>90000)load()});
 try{const c=JSON.parse(localStorage.getItem('ltcus')||'{}');$('name').value=c.name||'';$('phone').value=c.phone||'';if(c.xa)$('xa').value=c.xa}catch(e){}
 let DP;addEventListener('beforeinstallprompt',e=>{e.preventDefault();DP=e;$('inst').hidden=false});
 $('inst').onclick=async()=>{if(!DP)return;DP.prompt();await DP.userChoice;$('inst').hidden=true};
