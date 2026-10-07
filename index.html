@@ -367,18 +367,18 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(d.a!==undefined){if(MENU[d.a].out)return;if(isBusy(MENU[d.a].shop)){slide('Quán đang bận, bạn quay lại sau nhé!',3000);return}cart[d.a]=(cart[d.a]||0)+1;upd(d.a);drawCart()}
  if(d.m!==undefined){if(--cart[d.m]<=0)delete cart[d.m];upd(d.m);drawCart()}
 });
-$('fab').onclick=()=>sheet(true);$('close').onclick=$('bk').onclick=()=>sheet(false);
+$('fab').onclick=()=>{sheet(true);warmLoc()};$('close').onclick=$('bk').onclick=()=>sheet(false);
 const LOCTXT='Bắt buộc: cho phép lấy vị trí để shipper tìm đúng nhà bạn.';
 function getLoc(){return new Promise(ok=>{
  const lm=$('locmsg');
  if(!navigator.geolocation){lm.textContent='Trình duyệt này chưa hỗ trợ lấy vị trí. Hãy mở trang bằng Chrome hoặc Safari.';return ok(false)}
  lm.textContent='Đang lấy vị trí…';
- navigator.geolocation.getCurrentPosition(p=>{
-  MAP='https://www.google.com/maps?q='+p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6);
-  lm.textContent='✓ Đã lấy vị trí (sai số khoảng '+Math.round(p.coords.accuracy)+' m).';ok(true);
- },()=>{MAP='';lm.textContent='Chưa có vị trí nên chưa thể đặt hàng. Hãy cho phép truy cập vị trí trong cài đặt trình duyệt rồi bấm lại nút này.';ok(false)},
- {enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+ const good=p=>{MAP='https://www.google.com/maps?q='+p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6);
+  lm.textContent='✓ Đã lấy vị trí (sai số khoảng '+Math.round(p.coords.accuracy)+' m).';ok(true)};
+ const bad=()=>{MAP='';lm.textContent='Chưa có vị trí nên chưa thể đặt hàng. Hãy cho phép truy cập vị trí trong cài đặt trình duyệt rồi bấm lại nút này.';ok(false)};
+ navigator.geolocation.getCurrentPosition(good,()=>navigator.geolocation.getCurrentPosition(good,bad,{enableHighAccuracy:true,timeout:12000,maximumAge:300000}),{enableHighAccuracy:false,timeout:6000,maximumAge:300000});
 })}
+function warmLoc(){if(MAP||!navigator.permissions||!navigator.geolocation)return;navigator.permissions.query({name:'geolocation'}).then(r=>{if(r.state==='granted'&&!MAP)getLoc()}).catch(()=>{})}
 $('loc').onclick=getLoc;
 document.querySelectorAll('input[name=pay]').forEach(i=>i.onchange=()=>{const k=$('bank'),v=document.querySelector('input[name=pay]:checked').value==='Chuyển khoản';k.hidden=!v;k.innerHTML=v?`Chuyển khoản tới ${BANK.nh}, STK <b>${BANK.stk}</b>.<br>Mã QR kèm đúng số tiền và nội dung chuyển khoản sẽ hiện ngay sau khi bạn bấm <b>Đặt hàng</b>.`:''});
 function payBox(code,amt){const p=vietqr(amt,code);
@@ -403,8 +403,10 @@ $('order').onclick=async()=>{
  $('order').disabled=true;m.textContent='Đang gửi đơn…';
  try{
   const body=JSON.stringify({code,name,phone,addr,xa,note:$('note').value.trim(),map:MAP,pay,ship,items,total});let rs='ok';
-  try{rs=(await (await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body,signal:AbortSignal.timeout?AbortSignal.timeout(30000):undefined})).text()).trim()}
-  catch(e2){await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body})}
+  const slowT=setTimeout(()=>{m.textContent='Đang gửi đơn, máy chủ hơi chậm, bạn chờ thêm vài giây nhé…'},6000);
+  try{rs=(await (await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body,signal:AbortSignal.timeout?AbortSignal.timeout(25000):undefined})).text()).trim()}
+  catch(e2){try{await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body})}catch(e3){clearTimeout(slowT);throw e3}}
+  clearTimeout(slowT);
   if(rs==='closed'){m.textContent='Hiện quán đã đóng hoặc tạm nghỉ nhận đơn. Bạn quay lại sau nhé.';$('order').disabled=false;return}
   if(rs==='noqr'){QR=false;applyQr();m.textContent='Hiện quán tạm ngừng nhận chuyển khoản, bạn vui lòng chọn thanh toán tiền mặt nhé.';$('order').disabled=false;return}
   if(rs==='busy'){m.textContent='Có quán đang bận hoặc món vừa hết. Hãy kiểm tra lại giỏ hàng nhé.';load();$('order').disabled=false;return}
@@ -449,17 +451,18 @@ async function sendDish(){const T=TR,m=$('dmsg');if(!T)return;m.hidden=false;con
   if(r.ok){data.forEach(d=>T.rated.push(d.shop+'|'+d.dish));$('drate').outerHTML=dishRateHtml();const mm=$('dmsg');mm.hidden=false;mm.textContent='Cảm ơn bạn đã đánh giá! ❤️';load();return}
   m.textContent=r.msg||'Chưa gửi được, thử lại nhé.'}catch(e){m.textContent='Gửi chưa được. Vui lòng kiểm tra mạng và thử lại.'}
  b.disabled=false}
-function openTrack(){$('thist').innerHTML=histHtml();$('tcode').value=lastCode();$('tres').hidden=true;$('trk').hidden=false}
+function openTrack(){fetch(API_URL+'?ping=1',{cache:'no-store'}).catch(()=>{});$('thist').innerHTML=histHtml();$('tcode').value=lastCode();$('tres').hidden=true;$('trk').hidden=false}
 $('tclose').onclick=()=>{$('trk').hidden=true};
 $('trk').querySelector('.xb').onclick=()=>{$('trk').hidden=true};$('trk').onclick=e=>{if(e.target===$('trk'))$('trk').hidden=true};
 $('rpop').querySelector('.xb').onclick=()=>{$('rpop').hidden=true};$('rpop').onclick=e=>{if(e.target===$('rpop'))$('rpop').hidden=true};
-$('tgo').onclick=async()=>{const m=$('tres');m.hidden=false;m.textContent='Đang kiểm tra…';
- try{const r=await (await fetch(API_URL+'?'+new URLSearchParams({track:1,code:$('tcode').value.trim(),phone:$('tphone').value.trim()}))).json();
+async function apiGet(params,ms,tries){ms=ms||15000;tries=tries||2;let err;for(let i=0;i<tries;i++){const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms);try{const r=await fetch(API_URL+'?'+new URLSearchParams(params),{signal:ac.signal});if(!r.ok)throw new Error('http '+r.status);return await r.json()}catch(e){err=e;await sleep(400)}finally{clearTimeout(t)}}throw err}
+$('tgo').onclick=async()=>{const m=$('tres'),btn=$('tgo');m.hidden=false;m.textContent='Đang kiểm tra…';btn.disabled=true;const slow=setTimeout(()=>{m.textContent='Đang kiểm tra, máy chủ hơi chậm, bạn chờ chút nhé…'},5000);
+ try{const r=await apiGet({track:1,code:$('tcode').value.trim(),phone:$('tphone').value.trim()});
   if(!r.ok){m.textContent=r.msg||'Không tìm thấy đơn.';return}
   const S=['Mới','Đã báo quán','Đang giao','Đã giao'],i=S.findIndex(x=>String(r.status).startsWith(x));
   m.innerHTML='<b>'+esc(r.code)+'</b> · '+money(r.total)+(r.status==='Hủy'?'<br><b style="color:var(--accent)">Đơn đã hủy</b>':'<div class="tl">'+S.map((x,k)=>'<span class="'+(k<=i?'on':'')+'">'+x+'</span>').join('')+'</div>')+'<pre>'+esc(r.detail)+'</pre>'+(i===3?'Đơn đã giao. Cảm ơn bạn! Mời bạn đánh giá món ăn bên dưới, hoặc đánh giá quán ở trang quán.':'');
   TR=null;if(i===3&&Array.isArray(r.items)&&r.items.length){TR={code:r.code,phone:$('tphone').value.trim(),items:r.items,rated:r.rated||[],sel:{}};m.insertAdjacentHTML('beforeend',dishRateHtml())}
- }catch(e){m.textContent='Chưa kiểm tra được, thử lại nhé.'}};
+ }catch(e){m.textContent='Chưa kiểm tra được, thử lại nhé.'}finally{clearTimeout(slow);btn.disabled=false}};
 function closePop(){$('pop').hidden=true;if(window.PEND){const t=window.PEND;window.PEND=null;setTimeout(()=>slide(t,5500),400)}}
 $('popok').onclick=closePop;$('pop').onclick=e=>{if(e.target===$('pop'))closePop()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePop();['rpop','trk','typ','pol'].forEach(i=>$(i).hidden=true);sheet(false)}});
