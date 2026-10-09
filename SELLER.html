@@ -40,18 +40,19 @@ a{color:#1d4ed8}
    <label>Mã quản lý</label><input id="lk" type="password" autocomplete="current-password">
    <label class="ck"><input type="checkbox" id="lr" checked> Ghi nhớ trên máy này</label>
    <div class="g"><button class="p" id="lgo" style="width:100%">Vào quản lý</button></div>
-   <p class="mute" style="margin-top:8px">Quên mã? Hãy nhắn quản trị viên để được cấp mã mới.</p>
+   <div class="c warn" id="lmsg" hidden style="margin-top:10px"></div>
+   <p class="mute" style="margin-top:8px">Quán mới đăng ký chỉ đăng nhập được sau khi quản trị viên duyệt. Quên mã? Hãy nhắn quản trị viên để được cấp mã mới.</p>
   </div>
   <div class="c" id="pReg" hidden>
    <b>Đăng ký bán hàng cùng Lâm Thao Ăn Gì</b>
-   <p class="mute" style="margin-top:4px">Điền thông tin, bạn có thể nhập món ngay. Quán sẽ hiện trên web sau khi quản trị viên duyệt.</p>
+   <p class="mute" style="margin-top:4px">Điền thông tin và gửi đăng ký. Quản trị viên sẽ xem và duyệt; sau khi được duyệt bạn mới đăng nhập được để nhập món và nhận đơn.</p>
    <label>Tên quán *</label><input id="rn" maxlength="50">
    <label>Số điện thoại chủ quán *</label><input id="rp" inputmode="tel">
    <label>Gmail nhận đơn (không bắt buộc, thêm sau cũng được)</label><input id="re" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com">
    <label>Mô tả ngắn: quán bán gì (VD: Trà sữa · Ăn vặt)</label><input id="rd" maxlength="120">
    <label>🖼️ Logo hoặc ảnh quán (không bắt buộc, nên có)</label>
    <div class="g" style="align-items:center"><span class="th" id="rlp" style="width:64px;height:64px">🏪</span><button type="button" id="rlb" style="flex:1">Chọn ảnh từ máy</button><button type="button" class="d" id="rlx" hidden>Bỏ ảnh</button></div>
-   <p class="mute" style="margin-top:4px">Sau khi đăng ký, tên quán và logo do quản trị quản lý nên bạn không tự sửa được. Hãy chọn ảnh vuông, rõ nét.</p>
+   <p class="mute" style="margin-top:4px">Sau khi được duyệt, tên quán, logo, mô tả và Gmail sẽ bị khóa (chỉ quản trị viên sửa được). Hãy kiểm tra kỹ và chọn ảnh vuông, rõ nét.</p>
    <label>Đặt mã quản lý (6 ký tự trở lên, dùng để đăng nhập) *</label><input id="rk" type="password" autocomplete="new-password">
    <label>Nhập lại mã *</label><input id="rk2" type="password" autocomplete="new-password">
    <div class="g"><button class="p" id="rgo" style="width:100%">Gửi đăng ký</button></div>
@@ -86,9 +87,10 @@ function pick(cb,max){const f=document.createElement('input');f.type='file';f.ac
 
 /* ---------- đăng nhập / đăng ký ---------- */
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('on',x===b));$('pLogin').hidden=b.dataset.tab!=='login';$('pReg').hidden=b.dataset.tab!=='reg'});
-async function load(quiet){const r=await call({act:'load'},quiet?1:3);if(!r.ok)return r;S=r.shop;ORD=r.orders||[];RAT=r.ratings||[];$('auth').hidden=true;$('app').hidden=false;render();return r}
+function pendMsg(r){const x=$('lmsg');if(!x)return;if(r&&r.pending){x.hidden=false;x.innerHTML='⏳ <b>'+esc(r.msg)+'</b>'}else x.hidden=true}
+async function load(quiet){const r=await call({act:'load'},quiet?1:3);pendMsg(r);if(!r.ok)return r;S=r.shop;ORD=r.orders||[];RAT=r.ratings||[];$('auth').hidden=true;$('app').hidden=false;render();return r}
 $('lgo').onclick=async()=>{SHOP=$('ln').value.trim();KEY=$('lk').value;if(!SHOP||!KEY)return toast('Nhập tên quán và mã quản lý');const b=$('lgo');b.disabled=true;const r=await load();b.disabled=false;
- if(!r.ok){toast(r.msg||'Không đăng nhập được');SHOP=KEY='';return}
+ if(!r.ok){toast(r.pending?'Quán đang chờ duyệt':(r.msg||'Không đăng nhập được'));SHOP=KEY='';return}
  try{if($('lr').checked)localStorage.setItem('sl',JSON.stringify({s:SHOP,k:KEY}));else localStorage.removeItem('sl')}catch(e){}};
 $('lk').onkeydown=e=>{if(e.key==='Enter')$('lgo').click()};
 let RLOGO='';
@@ -100,23 +102,26 @@ $('rgo').onclick=async()=>{const n=$('rn').value.trim(),p=$('rp').value.trim(),e
  const b=$('rgo');b.disabled=true;b.textContent='Đang gửi…';
  const r=await post({seller:1,act:'register',shop:n,phone:p,email:em,desc:$('rd').value.trim(),key:k,logo:RLOGO});b.disabled=false;b.textContent='Gửi đăng ký';
  if(!r.ok)return toast(r.msg||'Lỗi');
- $('pReg').innerHTML='<b>✅ Đã gửi đăng ký!</b><p style="margin-top:8px">Quán <b>'+esc(n)+'</b> đang chờ quản trị viên duyệt (logo và thông tin sẽ được xem lại trước khi hiện trên web). Bạn có thể đăng nhập ngay bằng tên quán + mã vừa đặt để nhập món sẵn. Quán sẽ hiện trên web sau khi được duyệt.</p><div class="g"><button class="p" id="goLogin" style="width:100%">Đăng nhập luôn</button></div>';
- $('goLogin').onclick=()=>{document.querySelector('[data-tab=login]').click();$('ln').value=n;$('lk').value=k;$('lgo').click()}};
+ $('pReg').innerHTML='<b>✅ Đã gửi đăng ký!</b><p style="margin-top:8px">Quán <b>'+esc(n)+'</b> đang chờ quản trị viên duyệt. <b>Bạn chưa đăng nhập được cho tới khi quán được duyệt.</b> Khi được duyệt, hãy đăng nhập bằng tên quán + mã quản lý vừa đặt'+(em?' (hệ thống sẽ gửi email báo tới '+esc(em)+')':'')+'. Sau khi duyệt, tên quán, logo, mô tả và Gmail sẽ do quản trị viên quản lý.</p><div class="g"><button class="p" id="goLogin" style="width:100%">Về trang đăng nhập</button></div>';
+ $('goLogin').onclick=()=>location.reload()};
 
 /* ---------- giao diện ---------- */
 function render(){
  document.querySelectorAll('#nav [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
- let h=S.pending?'<div class="c warn">⏳ <b>Quán đang chờ quản trị viên duyệt.</b> Bạn cứ nhập món sẵn. Khi được duyệt, quán sẽ hiện trên web và bạn bắt đầu nhận đơn.</div>':'';
+ let h='';
  h+=V==='shop'?shopHtml():V==='items'?itemsHtml():V==='orders'?ordersHtml():V==='rates'?ratesHtml():acctHtml();
  $('main').innerHTML=h;$('sv').hidden=V!=='items';
  if(V==='items'&&Q)filterItems()}
-const shopHtml=()=>`<div class="c"><div class="hd">${thumb(S.logo)}<div><b>${esc(S.name)}</b><br><small>${S.pending?'⏳ Chờ duyệt':S.show?'🟢 Đang hiện trên web':'⚪ Đang ẩn'}${S.busy?' · 🔴 Đang bận':''} · ${S.items.length} món</small></div></div>
-<div data-t="shop"><label>🔒 Tên quán và logo do quản trị đặt, nhà bán không tự sửa được</label><input value="${esc(S.name)}" readonly disabled style="background:#f1f5f2"><input value="${esc(S.logo)}" placeholder="(chưa có logo, nhờ quản trị cập nhật)" readonly disabled style="background:#f1f5f2;margin-top:6px">
-<label>Mô tả ngắn: quán bán gì</label><input data-f="desc" maxlength="300" value="${esc(S.desc)}">
-<label>✉️ Gmail nhận đơn (khách đặt món của quán thì quán nhận mail; để trống = không nhận mail)</label><input data-f="email" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com" value="${esc(S.email)}">
-<label>💬 Zalo ID nhận đơn (do quản trị cấp; để trống nếu chưa có)</label><input data-f="zalo" value="${esc(S.zalo)}">
-<label class="ck"><input type="checkbox" data-f="show" ${S.show?'checked':''} ${S.pending?'disabled':''}> Hiện quán trên web</label>
-<div class="g"><button class="${S.busy?'p':'d'}" data-busy>${S.busy?'🟢 Mở lại quán':'🔴 Đóng quán (tạm bận)'}</button><button class="p" data-saveshop>Lưu thông tin</button></div></div></div>`;
+const LK='background:#f1f5f2';
+const shopHtml=()=>`<div class="c"><div class="hd">${thumb(S.logo)}<div><b>${esc(S.name)}</b><br><small>${S.show?'🟢 Đang hiện trên web':'⚪ Đang ẩn'}${S.busy?' · 🔴 Đang bận':''} · ${S.items.length} món</small></div></div>
+<div data-t="shop"><div class="c ok" style="margin:8px 0 0">🔒 Tên quán, logo, mô tả và Gmail đã được khóa sau khi duyệt. Cần thay đổi, hãy nhắn quản trị viên.</div>
+<label>Tên quán</label><input value="${esc(S.name)}" readonly disabled style="${LK}">
+<label>Logo</label><input value="${esc(S.logo)}" placeholder="(chưa có logo, nhờ quản trị cập nhật)" readonly disabled style="${LK}">
+<label>Mô tả ngắn: quán bán gì</label><input value="${esc(S.desc)}" readonly disabled style="${LK}">
+<label>✉️ Gmail nhận đơn</label><input value="${esc(S.email)}" placeholder="(chưa có, nhờ quản trị cập nhật)" readonly disabled style="${LK}">
+<label>💬 Zalo ID nhận đơn (do quản trị cấp)</label><input value="${esc(S.zalo)}" placeholder="(chưa có)" readonly disabled style="${LK}">
+<label class="ck" style="margin-top:12px"><input type="checkbox" data-f="show" ${S.show?'checked':''}> Hiện quán trên web</label>
+<div class="g"><button class="${S.busy?'p':'d'}" data-busy>${S.busy?'🟢 Mở lại quán':'🔴 Đóng quán (tạm bận)'}</button><button class="p" data-saveshop>Lưu hiển thị</button></div></div></div>`;
 
 function cw(){if(!CW)CW=(S.cats||[]).map(c=>({o:c,n:c}));return CW}
 const catOpts=c=>{c=c||'';const cs=S.cats||[];return '<option value="">(Chưa phân nhóm)</option>'+cs.map(x=>`<option ${x===c?'selected':''}>${esc(x)}</option>`).join('')+(c&&!cs.includes(c)?`<option selected>${esc(c)}</option>`:'')};
@@ -150,8 +155,8 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
  if(d.logout!==undefined){try{localStorage.removeItem('sl')}catch(e){}location.reload();return}
  if(d.up){const i=c.querySelector('[data-f='+d.up+']');pick(async x=>{toast('Đang tải ảnh…');const r=await call({act:'upload',data:x});if(r.ok){i.value=r.url;toast('Đã tải ảnh. Nhớ bấm Lưu.')}else toast(r.msg||'Lỗi tải ảnh')},d.up==='logo'?300:700);return}
  /* thông tin quán */
- if(d.saveshop!==undefined||d.busy!==undefined){const v=get(c);if(v.email&&!EMAIL_RE.test(v.email))return toast('Email chưa đúng định dạng');
-  b.disabled=true;const r=await call({act:'saveShop',...v,busy:d.busy!==undefined?!S.busy:S.busy});b.disabled=false;
+ if(d.saveshop!==undefined||d.busy!==undefined){const v=get(c);
+  b.disabled=true;const r=await call({act:'saveShop',show:v.show,busy:d.busy!==undefined?!S.busy:S.busy});b.disabled=false;
   if(r.ok){toast('Đã lưu ✓');await load(true)}else toast(r.msg||'Lỗi');return}
  /* nhóm món */
  if(d.cup!==undefined||d.cdn!==undefined||d.cdel!==undefined||d.cadd!==undefined){const w=cw();
@@ -211,6 +216,6 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
 
 /* ---------- tự đăng nhập lại + cập nhật đơn ---------- */
 (async()=>{try{const s=JSON.parse(localStorage.getItem('sl')||'null');if(s&&s.s&&s.k){SHOP=s.s;KEY=s.k;const r=await load();if(!r.ok){SHOP=KEY='';localStorage.removeItem('sl')}}}catch(e){}})();
-setInterval(async()=>{if(!SHOP||!S||document.hidden)return;const old=ORD.length?ORD[0].code:'',r=await call({act:'load'});if(!r.ok)return;ORD=r.orders||[];RAT=r.ratings||[];const nw=ORD.length?ORD[0].code:'';
+setInterval(async()=>{if(!SHOP||!S||document.hidden)return;const old=ORD.length?ORD[0].code:'',r=await call({act:'load'});if(!r.ok){if(r.pending){try{localStorage.removeItem('sl')}catch(e){}location.reload()}return}ORD=r.orders||[];RAT=r.ratings||[];const nw=ORD.length?ORD[0].code:'';
  if(nw&&nw!==old){beep();toast('🔔 Có đơn mới '+nw)}if(V==='orders'&&nw!==old)render()},40000);
 </script></body></html>
