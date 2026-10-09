@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="theme-color" content="#14532d">
+<title>Cổng nhà bán – Lâm Thao Ăn Gì</title>
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#eef5ef;--card:#fff;--ink:#17261d;--mute:#5f7266;--brand:#14532d;--line:#cfe0d4;--red:#d7263d}
+*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,'Segoe UI',sans-serif;padding-bottom:40px}
+.w{max-width:720px;margin:0 auto;padding:10px}
+h1{font-size:1.2rem;color:var(--brand);padding:8px 0}
+nav{position:sticky;top:0;z-index:3;background:var(--bg);display:flex;gap:6px;padding:8px 10px;overflow-x:auto}
+nav button{flex:none;padding:10px 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;font:inherit;cursor:pointer;color:var(--ink);font-weight:400}
+nav button.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
+.c{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px;margin-bottom:12px}
+.warn{background:#fff4e5;border-color:#f3c98b}.ok{background:#e8f6ec;border-color:#9bd3ac}
+.hd{display:flex;align-items:center;gap:10px;margin-bottom:8px}.th{width:44px;height:44px;border-radius:12px;background:#e3f1e7;display:grid;place-items:center;overflow:hidden;font-size:1.5rem;flex:none}.th img{width:100%;height:100%;object-fit:cover}
+label{display:block;font-size:.8rem;color:var(--mute);margin:8px 0 3px}
+input:not([type=checkbox]),select,textarea{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+.g{display:flex;gap:8px;margin-top:6px}.g>input{flex:1}.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{font:inherit;cursor:pointer;padding:10px 14px;border-radius:10px;border:1.5px solid var(--brand);background:#fff;color:var(--brand);font-weight:600}
+button.p{background:var(--brand);color:#fff}button.d{border-color:var(--red);color:var(--red)}button:disabled{opacity:.45;cursor:default}
+.ck{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:.95rem}
+pre{white-space:pre-wrap;font:inherit;background:#f4f8f5;border-radius:10px;padding:8px;margin:6px 0}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;background:#e3f1e7;font-size:.8rem}
+.mute{color:var(--mute);font-size:.88rem}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#17261d;color:#fff;padding:12px 18px;border-radius:12px;display:none;z-index:9;max-width:90%}
+.auth{max-width:440px;margin:6vh auto}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{flex:1}.tabs button.on{background:var(--brand);color:#fff}
+.seg{display:flex;gap:6px;margin-top:8px}.seg button{flex:1;padding:9px 4px}.gh{font-size:.95rem;color:var(--brand);margin:14px 2px 8px}
+a{color:#1d4ed8}
+</style></head><body>
+<div class="w"><h1>🏪 Cổng nhà bán · Lâm Thao Ăn Gì</h1></div>
+
+<div class="w" id="auth">
+ <div class="auth">
+  <div class="tabs"><button class="on" data-tab="login">Đăng nhập</button><button data-tab="reg">Đăng ký quán mới</button></div>
+  <div class="c" id="pLogin">
+   <b>Đăng nhập quản lý quán</b>
+   <label>Tên quán (đúng như trên web)</label><input id="ln" autocomplete="username">
+   <label>Mã quản lý</label><input id="lk" type="password" autocomplete="current-password">
+   <label class="ck"><input type="checkbox" id="lr" checked> Ghi nhớ trên máy này</label>
+   <div class="g"><button class="p" id="lgo" style="width:100%">Vào quản lý</button></div>
+   <p class="mute" style="margin-top:8px">Quên mã? Hãy nhắn quản trị viên để được cấp mã mới.</p>
+  </div>
+  <div class="c" id="pReg" hidden>
+   <b>Đăng ký bán hàng cùng Lâm Thao Ăn Gì</b>
+   <p class="mute" style="margin-top:4px">Điền thông tin, bạn có thể nhập món ngay. Quán sẽ hiện trên web sau khi quản trị viên duyệt.</p>
+   <label>Tên quán *</label><input id="rn" maxlength="50">
+   <label>Số điện thoại chủ quán *</label><input id="rp" inputmode="tel">
+   <label>Gmail nhận đơn (không bắt buộc, thêm sau cũng được)</label><input id="re" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com">
+   <label>Mô tả ngắn: quán bán gì (VD: Trà sữa · Ăn vặt)</label><input id="rd" maxlength="120">
+   <label>Đặt mã quản lý (6 ký tự trở lên, dùng để đăng nhập) *</label><input id="rk" type="password" autocomplete="new-password">
+   <label>Nhập lại mã *</label><input id="rk2" type="password" autocomplete="new-password">
+   <div class="g"><button class="p" id="rgo" style="width:100%">Gửi đăng ký</button></div>
+  </div>
+ </div>
+</div>
+
+<div id="app" hidden>
+ <nav id="nav"><button data-v="shop">🏪 Quán</button><button data-v="items">🍜 Món</button><button data-v="orders">📦 Đơn</button><button data-v="rates">⭐ Đánh giá</button><button data-v="acct">🔑 Tài khoản</button><button data-reload>↻</button></nav>
+ <div class="w" id="main"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const API='https://script.google.com/macros/s/AKfycbwyheCMFxZJvm-lgD4Zm4ggdj8m984nfakQ1cIgEHGdLal1JfRh5HFS0knEpCz3dDlq/exec';
+const $=i=>document.getElementById(i);
+let SHOP='',KEY='',S=null,ORD=[],RAT=[],V='shop',CW=null,Q='';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>Number(n||0).toLocaleString('vi-VN')+'đ';
+const EMAIL_RE=/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+const mapOk=u=>/^https:\/\/(www\.)?google\.com\/maps/.test(String(u||''));
+function imgUrl(u){u=String(u||'').trim();const m=u.match(/drive\.google\.com.*?(?:\/d\/|[?&]id=)([\w-]+)/);return m?'https://lh3.googleusercontent.com/d/'+m[1]+'=w200':u}
+const thumb=(u,e)=>`<span class="th">${u?`<img src="${esc(imgUrl(u))}" alt="" onerror="this.remove()">`:e||'🏪'}</span>`;
+function toast(t){const x=$('toast');x.textContent=t;x.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>x.style.display='none',3200)}
+function beep(){try{const x=new AudioContext(),o=x.createOscillator();o.connect(x.destination);o.frequency.value=880;o.start();o.stop(x.currentTime+.35)}catch(e){}}
+async function post(o,n=1){for(let i=0;i<n;i++){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),45000);try{return await (await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o),signal:ac.signal})).json()}catch(e){if(i<n-1)await new Promise(r=>setTimeout(r,1500*(i+1)))}finally{clearTimeout(tm)}}return{ok:false,msg:'Lỗi mạng, vui lòng thử lại.'}}
+const call=(o,n)=>post({...o,seller:1,shop:SHOP,key:KEY},n);
+const get=c=>{const o={};c.querySelectorAll('[data-f]').forEach(i=>o[i.dataset.f]=i.type==='checkbox'?i.checked:i.value.trim());return o};
+function parsePrice(s){s=String(s||'').trim().toLowerCase().replace(/đ|₫|vnđ|vnd/g,'').trim();const k=/k$/.test(s);s=s.replace(/k$/,'').trim();if(k){const n=parseFloat(s.replace(',','.'));return isFinite(n)?Math.round(n*1000):0}const d=s.replace(/[.,\s]/g,'');return /^\d+$/.test(d)?Number(d):0}
+function pick(cb,max){const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{if(!f.files[0])return;const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.8).split(',')[1])};im.src=URL.createObjectURL(f.files[0])};f.click()}
+
+/* ---------- đăng nhập / đăng ký ---------- */
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('on',x===b));$('pLogin').hidden=b.dataset.tab!=='login';$('pReg').hidden=b.dataset.tab!=='reg'});
+async function load(quiet){const r=await call({act:'load'},quiet?1:3);if(!r.ok)return r;S=r.shop;ORD=r.orders||[];RAT=r.ratings||[];$('auth').hidden=true;$('app').hidden=false;render();return r}
+$('lgo').onclick=async()=>{SHOP=$('ln').value.trim();KEY=$('lk').value;if(!SHOP||!KEY)return toast('Nhập tên quán và mã quản lý');const b=$('lgo');b.disabled=true;const r=await load();b.disabled=false;
+ if(!r.ok){toast(r.msg||'Không đăng nhập được');SHOP=KEY='';return}
+ try{if($('lr').checked)localStorage.setItem('sl',JSON.stringify({s:SHOP,k:KEY}));else localStorage.removeItem('sl')}catch(e){}};
+$('lk').onkeydown=e=>{if(e.key==='Enter')$('lgo').click()};
+$('rgo').onclick=async()=>{const n=$('rn').value.trim(),p=$('rp').value.trim(),em=$('re').value.trim(),k=$('rk').value;
+ if(!n)return toast('Nhập tên quán');if(p.replace(/\D/g,'').length<9)return toast('Số điện thoại chưa đúng');if(em&&!EMAIL_RE.test(em))return toast('Email chưa đúng định dạng');
+ if(k.length<6)return toast('Mã quản lý cần ít nhất 6 ký tự');if(k!==$('rk2').value)return toast('Hai lần nhập mã chưa giống nhau');
+ const b=$('rgo');b.disabled=true;b.textContent='Đang gửi…';
+ const r=await post({seller:1,act:'register',shop:n,phone:p,email:em,desc:$('rd').value.trim(),key:k});b.disabled=false;b.textContent='Gửi đăng ký';
+ if(!r.ok)return toast(r.msg||'Lỗi');
+ $('pReg').innerHTML='<b>✅ Đã gửi đăng ký!</b><p style="margin-top:8px">Quán <b>'+esc(n)+'</b> đang chờ quản trị viên duyệt. Bạn có thể đăng nhập ngay bằng tên quán + mã vừa đặt để nhập món sẵn. Quán sẽ hiện trên web sau khi được duyệt.</p><div class="g"><button class="p" id="goLogin" style="width:100%">Đăng nhập luôn</button></div>';
+ $('goLogin').onclick=()=>{document.querySelector('[data-tab=login]').click();$('ln').value=n;$('lk').value=k;$('lgo').click()}};
+
+/* ---------- giao diện ---------- */
+function render(){
+ document.querySelectorAll('#nav [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
+ let h=S.pending?'<div class="c warn">⏳ <b>Quán đang chờ quản trị viên duyệt.</b> Bạn cứ nhập món sẵn. Khi được duyệt, quán sẽ hiện trên web và bạn bắt đầu nhận đơn.</div>':'';
+ h+=V==='shop'?shopHtml():V==='items'?itemsHtml():V==='orders'?ordersHtml():V==='rates'?ratesHtml():acctHtml();
+ $('main').innerHTML=h;
+ if(V==='items'&&Q)filterItems()}
+const shopHtml=()=>`<div class="c"><div class="hd">${thumb(S.logo)}<div><b>${esc(S.name)}</b><br><small>${S.pending?'⏳ Chờ duyệt':S.show?'🟢 Đang hiện trên web':'⚪ Đang ẩn'}${S.busy?' · 🔴 Đang bận':''} · ${S.items.length} món</small></div></div>
+<div data-t="shop"><label>Logo quán (dán link ảnh https hoặc bấm Tải ảnh)</label><div class="g"><input data-f="logo" value="${esc(S.logo)}"><button data-up="logo">Tải ảnh</button></div>
+<label>Mô tả ngắn: quán bán gì</label><input data-f="desc" maxlength="300" value="${esc(S.desc)}">
+<label>✉️ Gmail nhận đơn (khách đặt món của quán thì quán nhận mail; để trống = không nhận mail)</label><input data-f="email" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com" value="${esc(S.email)}">
+<label>💬 Zalo ID nhận đơn (do quản trị cấp; để trống nếu chưa có)</label><input data-f="zalo" value="${esc(S.zalo)}">
+<label class="ck"><input type="checkbox" data-f="show" ${S.show?'checked':''} ${S.pending?'disabled':''}> Hiện quán trên web</label>
+<div class="g"><button class="${S.busy?'p':'d'}" data-busy>${S.busy?'🟢 Mở lại quán':'🔴 Đóng quán (tạm bận)'}</button><button class="p" data-saveshop>Lưu thông tin</button></div></div></div>`;
+
+function cw(){if(!CW)CW=(S.cats||[]).map(c=>({o:c,n:c}));return CW}
+const catOpts=c=>{c=c||'';const cs=S.cats||[];return '<option value="">(Chưa phân nhóm)</option>'+cs.map(x=>`<option ${x===c?'selected':''}>${esc(x)}</option>`).join('')+(c&&!cs.includes(c)?`<option selected>${esc(c)}</option>`:'')};
+const catsCard=()=>{const w=cw();return `<div class="c"><b>🗂️ Nhóm món</b><br><small class="mute">VD: 🧋 Trà sữa, 🍟 Ăn vặt. Khách thấy các nhóm này khi vào quán. Dùng ↑ ↓ để đổi thứ tự. Nhớ bấm Lưu nhóm.</small>${w.map((c,i)=>`<div class="g" data-ci="${i}"><input data-cname value="${esc(c.n)}"><button data-cup="${i}" ${i?'':'disabled'}>↑</button><button data-cdn="${i}" ${i<w.length-1?'':'disabled'}>↓</button><button class="d" data-cdel="${i}">✕</button></div>`).join('')}<div class="g"><input id="ncat" placeholder="Tên nhóm mới"><button data-cadd>Thêm</button></div><button class="p" data-csave style="margin-top:8px;width:100%">Lưu nhóm</button></div>`};
+const bulkCard=()=>`<div class="c"><b>📋 Nhập nhiều món cùng lúc</b><br><small class="mute">Mỗi dòng một món: <b>Tên | Giá | Mô tả | Nhóm</b> (mô tả và nhóm có thể bỏ trống). Dán thẳng từ Excel/Google Sheet cũng được. Giá viết 25000, 25.000 hoặc 25k. Món trùng tên với món đã có sẽ bị bỏ qua.</small><textarea id="bulk" rows="7" style="margin-top:6px" placeholder="Trà sữa trân châu | 25000 | Vị đậm | Trà sữa&#10;Trà đào cam sả | 30k | | Trà trái cây"></textarea><button class="p" data-bulk style="margin-top:8px;width:100%">Thêm các món này</button></div>`;
+const BLANK={row:0,name:'',price:'',desc:'',emoji:'',img:'',cat:'',state:'show'};
+const itemRow=it=>`<div class="c" data-t="item" data-row="${it.row||0}" data-n="${esc(String(it.name).toLowerCase())}"><div class="hd">${thumb(it.img,esc(it.emoji)||'🍽️')}<b>${it.row?esc(it.name):'➕ Thêm một món mới'}</b></div>
+<input data-f="name" placeholder="Tên món" maxlength="80" value="${esc(it.name)}"><div class="g2" style="margin-top:6px"><input data-f="price" inputmode="numeric" placeholder="Giá (VD 25000)" value="${esc(it.price)}"><input data-f="emoji" placeholder="Emoji" value="${esc(it.emoji)}"></div>
+<input data-f="desc" placeholder="Mô tả món" maxlength="200" style="margin-top:6px" value="${esc(it.desc)}"><label>Nhóm món</label><select data-f="cat">${catOpts(it.cat)}</select>
+<div class="g"><input data-f="img" placeholder="Link ảnh món (https)" value="${esc(it.img)}"><button data-up="img">Tải ảnh</button></div>
+${it.row?`<div class="seg">${[['show','Đang bán'],['out','Hết món'],['hide','Ẩn']].map(([k,l])=>`<button class="${(it.state||'show')===k?'p':''}" data-qs="${k}" data-row="${it.row}" data-name="${esc(it.name)}">${l}</button>`).join('')}</div>`:''}
+<div class="g"><button class="p" data-saveitem>${it.row?'Lưu món':'Thêm món'}</button>${it.row?'<button class="d" data-del>Xóa</button>':''}</div></div>`;
+function itemsHtml(){
+ const cs=S.cats||[],known=new Set(cs);let list='';
+ [...cs,''].forEach(c=>{const a=S.items.filter(i=>c?i.cat===c:!known.has(i.cat||''));if(a.length)list+=`<h3 class="gh">${esc(c||'Chưa phân nhóm')} <small>(${a.length})</small></h3>`+a.map(itemRow).join('')});
+ return catsCard()+bulkCard()+itemRow(BLANK)+`<div class="c"><label style="margin:0">🔎 Tìm món trong quán (${S.items.length} món)</label><input id="q" placeholder="Gõ tên món" value="${esc(Q)}"></div>`+(list||'<p class="mute">Chưa có món nào. Hãy thêm món ở trên.</p>')}
+function filterItems(){const q=Q.trim().toLowerCase();document.querySelectorAll('#main [data-t=item]').forEach(c=>{if(!+c.dataset.row)return;c.style.display=!q||c.dataset.n.includes(q)?'':'none'})}
+const ordersHtml=()=>`<p class="mute" style="margin:2px 0 10px">Chỉ hiện phần món của quán bạn. Trang tự cập nhật mỗi 40 giây, có tiếng báo khi có đơn mới.${S.share?'':' Số điện thoại và vị trí khách chưa được cấp quyền: hãy liên hệ quản trị nếu cần.'}</p>`+(ORD.map(o=>`<div class="c"><b>${esc(o.code)}</b> <small>${esc(o.time)}</small> <span class="tag">${esc(o.status)}</span><br>👤 ${esc(o.name)}${o.phone?` · <a href="tel:${esc(o.phone)}"><b>📞 ${esc(o.phone)}</b></a> · <a href="https://zalo.me/${esc(String(o.phone).replace(/\D/g,''))}" target="_blank" rel="noopener">Zalo</a>`:''}<br><small>📍 ${esc(o.addr)}</small>${mapOk(o.map)?` · <a href="${esc(o.map)}" target="_blank" rel="noopener">Mở Google Maps</a>`:''}${o.note?`<br><small>📝 ${esc(o.note)}</small>`:''}<pre>${esc(o.lines.join('\n'))}</pre><b>Tiền quán: ${money(o.sub)}</b> · ${esc(o.pay||'')}</div>`).join('')||'<p class="mute">Chưa có đơn nào.</p>');
+const ratesHtml=()=>RAT.map(r=>`<div class="c">${r.dish?'<b>'+esc(r.dish)+'</b> ':'<b>Đánh giá quán</b> '}<span class="tag">${'★'.repeat(r.star)}${'☆'.repeat(5-r.star)}</span><br>${esc(r.cmt)||'<i>(không nhận xét)</i>'}<br><small>${esc(r.name)} · ${esc(r.time)}</small></div>`).join('')||'<p class="mute">Chưa có đánh giá.</p>';
+const acctHtml=()=>`<div class="c"><b>🔑 Đổi mã quản lý</b><div data-t="key"><label>Mã mới (6 ký tự trở lên)</label><input data-f="nk" type="password" autocomplete="new-password"><label>Nhập lại mã mới</label><input data-f="nk2" type="password" autocomplete="new-password"><div class="g"><button class="p" data-chkey>Đổi mã</button></div></div></div>
+<div class="c"><b>Quy định</b><p class="mute" style="margin-top:4px">Bạn chịu trách nhiệm về giá, hình ảnh và chất lượng món. Chỉ đăng nội dung của quán mình. Quản trị viên có thể ẩn món hoặc quán vi phạm.</p></div>
+<div class="c"><button class="d" data-logout style="width:100%">Đăng xuất</button></div>`;
+
+/* ---------- sự kiện ---------- */
+document.addEventListener('input',e=>{const t=e.target;
+ if(t.dataset&&t.dataset.cname!==undefined){const p=t.closest('[data-ci]');if(p)cw()[+p.dataset.ci].n=t.value}
+ if(t.id==='q'){Q=t.value;filterItems()}});
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset,c=b.closest('[data-t]');
+ if(d.v){V=d.v;render();scrollTo(0,0);return}
+ if(d.reload!==undefined){const r=await load(true);toast(r.ok?'Đã tải lại':(r.msg||'Lỗi'));return}
+ if(d.logout!==undefined){try{localStorage.removeItem('sl')}catch(e){}location.reload();return}
+ if(d.up){const i=c.querySelector('[data-f='+d.up+']');pick(async x=>{toast('Đang tải ảnh…');const r=await call({act:'upload',data:x});if(r.ok){i.value=r.url;toast('Đã tải ảnh. Nhớ bấm Lưu.')}else toast(r.msg||'Lỗi tải ảnh')},d.up==='logo'?300:700);return}
+ /* thông tin quán */
+ if(d.saveshop!==undefined||d.busy!==undefined){const v=get(c);if(v.email&&!EMAIL_RE.test(v.email))return toast('Email chưa đúng định dạng');
+  b.disabled=true;const r=await call({act:'saveShop',...v,busy:d.busy!==undefined?!S.busy:S.busy});b.disabled=false;
+  if(r.ok){toast('Đã lưu ✓');await load(true)}else toast(r.msg||'Lỗi');return}
+ /* nhóm món */
+ if(d.cup!==undefined||d.cdn!==undefined||d.cdel!==undefined||d.cadd!==undefined){const w=cw();
+  if(d.cup!==undefined){const k=+d.cup;[w[k-1],w[k]]=[w[k],w[k-1]]}
+  else if(d.cdn!==undefined){const k=+d.cdn;[w[k+1],w[k]]=[w[k],w[k+1]]}
+  else if(d.cdel!==undefined)w.splice(+d.cdel,1);
+  else{const v=$('ncat').value.trim();if(!v)return toast('Nhập tên nhóm');w.push({o:'',n:v})}
+  render();return}
+ if(d.csave!==undefined){const w=cw(),names=w.map(x=>x.n.trim());if(names.some(x=>!x))return toast('Có nhóm đang để trống tên');if(new Set(names).size<names.length)return toast('Tên nhóm bị trùng');
+  const ren={};w.forEach(x=>{if(x.o&&x.o!==x.n.trim())ren[x.o]=x.n.trim()});
+  b.disabled=true;const r=await call({act:'saveCats',cats:names,renames:ren});b.disabled=false;
+  if(r.ok){CW=null;toast('Đã lưu nhóm ✓');await load(true)}else toast(r.msg||'Lỗi');return}
+ /* nhập hàng loạt */
+ if(d.bulk!==undefined){
+  const lines=$('bulk').value.split('\n').map(x=>x.trim()).filter(Boolean);if(!lines.length)return toast('Hãy dán danh sách món');
+  const have=new Set(S.items.map(i=>String(i.name).trim().toLowerCase())),seen=new Set(),add=[],bad=[],newCats=[];let dup=0;
+  lines.forEach((ln,k)=>{const p=ln.split(/\t|\|/).map(x=>x.trim()),name=p[0],price=parsePrice(p[1]);
+   if(!name||!(price>0)){bad.push('dòng '+(k+1));return}
+   const key=name.toLowerCase();if(have.has(key)||seen.has(key)){dup++;return}seen.add(key);
+   const cat=(p[3]||'').trim();if(cat&&!(S.cats||[]).includes(cat)&&!newCats.includes(cat))newCats.push(cat);
+   add.push({row:0,name,price,desc:p[2]||'',emoji:'🍽️',cat,img:'',state:'show'})});
+  if(bad.length)return toast('Thiếu tên hoặc giá ở '+bad.slice(0,5).join(', ')+(bad.length>5?'…':''));
+  if(!add.length)return toast(dup?'Tất cả món đã có trong quán':'Không có món hợp lệ');
+  b.disabled=true;
+  if(newCats.length){b.textContent='Đang tạo nhóm…';const rc=await call({act:'saveCats',cats:(S.cats||[]).concat(newCats),renames:{}});if(!rc.ok){b.disabled=false;b.textContent='Thêm các món này';return toast(rc.msg||'Lỗi tạo nhóm')}}
+  let done=0,msg='';
+  for(let i=0;i<add.length;i+=100){b.textContent='Đang lưu '+Math.min(i+100,add.length)+'/'+add.length+'…';const r=await call({act:'saveItems',items:add.slice(i,i+100)});if(!r.ok){msg=r.msg||'Lỗi';break}done+=Math.min(100,add.length-i)}
+  b.disabled=false;b.textContent='Thêm các món này';CW=null;
+  await load(true);toast(msg?('Đã thêm '+done+' món, lỗi: '+msg):('Đã thêm '+done+' món ✓'+(dup?' · bỏ qua '+dup+' món trùng':'')));return}
+ /* món */
+ if(d.qs){const it=S.items.find(x=>x.row==d.row);const r=await call({act:'setState',row:+d.row,name:d.name,state:d.qs});if(r.ok){if(it)it.state=d.qs;render();toast('Đã cập nhật ✓')}else toast(r.msg||'Lỗi');return}
+ if(d.saveitem!==undefined){const row=+c.dataset.row,v=get(c),it=row?S.items.find(x=>x.row===row):null,price=parsePrice(v.price);
+  if(!v.name)return toast('Nhập tên món');if(!(price>0))return toast('Giá phải lớn hơn 0');
+  if(S.items.some(x=>x.row!==row&&String(x.name).trim().toLowerCase()===v.name.toLowerCase()))return toast('Quán đã có món tên này');
+  b.disabled=true;const r=await call({act:'saveItems',items:[{row,orig:it?it.name:'',name:v.name,price,desc:v.desc,emoji:v.emoji,cat:v.cat,img:v.img,state:it?it.state:'show'}]});b.disabled=false;
+  if(r.ok&&!(r.failed&&r.failed.length)){toast(row?'Đã lưu món ✓':'Đã thêm món ✓');await load(true)}else toast(r.ok?'Danh sách món đã thay đổi, hãy bấm ↻ rồi sửa lại':(r.msg||'Lỗi'));return}
+ if(d.del!==undefined){const row=+c.dataset.row,it=S.items.find(x=>x.row===row);if(!it||!confirm('Xóa món "'+it.name+'"?'))return;
+  const r=await call({act:'delItem',row,name:it.name});if(r.ok){toast('Đã xóa ✓');await load(true)}else toast(r.msg||'Lỗi');return}
+ /* đổi mã */
+ if(d.chkey!==undefined){const v=get(c);if(v.nk.length<6)return toast('Mã mới cần ít nhất 6 ký tự');if(v.nk!==v.nk2)return toast('Hai lần nhập chưa giống nhau');
+  const r=await call({act:'changeKey',newKey:v.nk});if(r.ok){KEY=v.nk;try{if(localStorage.getItem('sl'))localStorage.setItem('sl',JSON.stringify({s:SHOP,k:KEY}))}catch(e){}toast('Đã đổi mã ✓');render()}else toast(r.msg||'Lỗi');return}
+});
+
+/* ---------- tự đăng nhập lại + cập nhật đơn ---------- */
+(async()=>{try{const s=JSON.parse(localStorage.getItem('sl')||'null');if(s&&s.s&&s.k){SHOP=s.s;KEY=s.k;const r=await load();if(!r.ok){SHOP=KEY='';localStorage.removeItem('sl')}}}catch(e){}})();
+setInterval(async()=>{if(!SHOP||!S||document.hidden)return;const old=ORD.length?ORD[0].code:'',r=await call({act:'load'});if(!r.ok)return;ORD=r.orders||[];RAT=r.ratings||[];const nw=ORD.length?ORD[0].code:'';
+ if(nw&&nw!==old){beep();toast('🔔 Có đơn mới '+nw)}if(V==='orders'&&nw!==old)render()},40000);
+</script></body></html>
