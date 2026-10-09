@@ -69,11 +69,12 @@ const custHtml=s=>{
  const can=s.share&&s.email;
  const note=!s.share?'Quán này CHƯA được cấp quyền nhận thông tin khách. Bật ô "Cho phép gửi SĐT + vị trí" rồi bấm Lưu quán để gửi được.':!s.email?'Quán chưa có Gmail nhận đơn, hãy nhập email ở trên.':'Đã cấp quyền: đơn mới của quán sẽ tự gửi kèm SĐT + Google Maps. Bấm "Gửi cho quán" để gửi lại một đơn cũ.';
  return `<div style="margin-top:10px;border-top:1.5px dashed var(--line);padding-top:8px"><small style="color:var(--mute)">${note}</small>`+(L.length?L.map(o=>`<div class="c" style="margin:8px 0 0;background:#f9fbf9"><b>${esc(o.code)}</b> <small>${esc(o.time)} · ${esc(o.status)}</small><br>👤 ${esc(o.name)}<br>📞 <a href="tel:${esc(o.phone)}" style="font-weight:700">${esc(o.phone)}</a> · <a href="https://zalo.me/${esc(String(o.phone).replace(/\D/g,''))}" target="_blank" rel="noopener">Zalo</a><br><small>📍 ${esc(o.addr)}</small>${mapOk(o.map)?` · <a href="${esc(o.map)}" target="_blank" rel="noopener">Mở Google Maps</a>`:' · <small>(khách không chia sẻ vị trí)</small>'}<pre>${esc(shopLines(o.detail,s.name).join('\n'))}</pre><small>${esc(o.pay||'')}${o.note?' · 📝 '+esc(o.note):''}</small><div class="g"><button class="${can?'p':''}" ${can?'':'disabled'} data-sendshop="${esc(o.code)}" data-shop="${esc(s.name)}" data-row="${o.row}">📤 Gửi cho quán</button></div></div>`).join(''):'<p style="margin:8px 0;color:var(--mute)">Chưa có đơn nào của quán này.</p>')+'</div>'};
-const shopRow=(s,i)=>`<div class="c" data-t="shop" data-n="${esc(s.name)}"><div class="hd">${thumb(s.logo)}<div><span class="rk">${i+1}</span><b>${esc(s.name)}</b><br><small>${s.items.length} món · 🛒 ${s.sold||0} đơn đã bán${s.show?'':' · ĐANG ẨN'}${s.busy?' · 🔴 ĐANG BẬN':''}${s.email?' · ✉️ '+esc(s.email):' · ✉️ chưa có email'}${s.share?' · 📤 nhận SĐT+bản đồ khách':''}</small></div></div>
+const shopRow=(s,i)=>`<div class="c" data-t="shop" data-n="${esc(s.name)}"><div class="hd">${thumb(s.logo)}<div><span class="rk">${i+1}</span><b>${esc(s.name)}</b><br><small>${s.items.length} món · 🛒 ${s.sold||0} đơn đã bán${s.show?'':' · ĐANG ẨN'}${s.busy?' · 🔴 ĐANG BẬN':''}${s.email?' · ✉️ '+esc(s.email):' · ✉️ chưa có email'}${s.share?' · 📤 nhận SĐT+bản đồ khách':''}${s.zalo?' · 💬 có Zalo':' · 💬 chưa có Zalo'}</small></div></div>
 <label>✏️ Tên quán (sửa rồi bấm "Đổi tên")</label><div class="g"><input data-f="newname" value="${esc(s.name)}"><button data-rename="${i}">Đổi tên</button></div>
 <label>Logo quán (dán link hoặc bấm Tải ảnh)</label><div class="g"><input data-f="logo" value="${esc(s.logo)}"><button data-up="logo">Tải ảnh</button></div>
 <label>Mô tả ngắn: quán bán gì (VD: Trà sữa · Cà phê · Ăn vặt)</label><input data-f="desc" value="${esc(s.desc)}">
 <label>✉️ Gmail nhận đơn của quán (khách đặt món của quán này thì quán nhận mail; để trống = quán không nhận mail)</label><input data-f="email" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com" value="${esc(s.email)}">
+<label>💬 Zalo ID nhận đơn của quán (mã chat của quán với bot Zalo; để trống = quán không nhận Zalo)</label><input data-f="zalo" inputmode="text" autocomplete="off" placeholder="Dán chat id lấy bằng hàm layZaloChatId" value="${esc(s.zalo)}">
 <label>Nhãn hiển thị cạnh tên quán trên trang khách</label><select data-f="badge">${badgeOpts(s.badge)}</select>
 <label class="ck"><input type="checkbox" data-f="show" ${s.show?'checked':''}> Hiện quán trên web</label>
 <label class="ck"><input type="checkbox" data-f="share" ${s.share?'checked':''}> 📤 Cho phép gửi SĐT + vị trí Google Maps của khách cho quán này</label>
@@ -141,7 +142,7 @@ async function saveAll(b){
    const cards=[...document.querySelectorAll('#main [data-t=shop]')];let n=0,bad=0;
    for(let i=0;i<cards.length;i++){
     const s=D.shops[i],v=get(cards[i]);if(!s)continue;
-    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show&&v.email===String(s.email||'')&&v.badge===String(s.badge||'')&&v.share===!!s.share)continue;
+    if(v.logo===String(s.logo||'')&&v.desc===String(s.desc||'')&&v.show===!!s.show&&v.email===String(s.email||'')&&v.badge===String(s.badge||'')&&v.share===!!s.share&&v.zalo===String(s.zalo||''))continue;
     if(v.email&&!EMAIL_RE.test(v.email)){toast('Email của quán "'+s.name+'" chưa đúng định dạng');bad++;continue}
     b.textContent='Đang lưu '+s.name+'…';
     const r=await call({act:'saveShop',name:s.name,...v,busy:s.busy});r.ok?n++:bad++;
