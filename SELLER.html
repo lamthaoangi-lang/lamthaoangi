@@ -27,6 +27,7 @@ pre{white-space:pre-wrap;font:inherit;background:#f4f8f5;border-radius:10px;padd
 .tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{flex:1}.tabs button.on{background:var(--brand);color:#fff}
 .seg{display:flex;gap:6px;margin-top:8px}.seg button{flex:1;padding:9px 4px}.gh{font-size:.95rem;color:var(--brand);margin:14px 2px 8px}
 a{color:#1d4ed8}
+.sv{position:fixed;left:0;right:0;bottom:0;z-index:4;background:var(--bg);padding:10px;box-shadow:0 -2px 12px rgba(0,0,0,.12)}.sv[hidden]{display:none}.sv button{display:block;max-width:700px;margin:0 auto;width:100%;padding:14px;font-size:1rem}body{padding-bottom:90px}
 </style></head><body>
 <div class="w"><h1>🏪 Cổng nhà bán · Lâm Thao Ăn Gì</h1></div>
 
@@ -59,6 +60,7 @@ a{color:#1d4ed8}
  <nav id="nav"><button data-v="shop">🏪 Quán</button><button data-v="items">🍜 Món</button><button data-v="orders">📦 Đơn</button><button data-v="rates">⭐ Đánh giá</button><button data-v="acct">🔑 Tài khoản</button><button data-reload>↻</button></nav>
  <div class="w" id="main"></div>
 </div>
+<div class="sv" id="sv" hidden><button class="p" data-saveall>💾 Lưu tất cả các món</button></div>
 <div id="toast"></div>
 
 <script>
@@ -100,10 +102,10 @@ function render(){
  document.querySelectorAll('#nav [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
  let h=S.pending?'<div class="c warn">⏳ <b>Quán đang chờ quản trị viên duyệt.</b> Bạn cứ nhập món sẵn. Khi được duyệt, quán sẽ hiện trên web và bạn bắt đầu nhận đơn.</div>':'';
  h+=V==='shop'?shopHtml():V==='items'?itemsHtml():V==='orders'?ordersHtml():V==='rates'?ratesHtml():acctHtml();
- $('main').innerHTML=h;
+ $('main').innerHTML=h;$('sv').hidden=V!=='items';
  if(V==='items'&&Q)filterItems()}
 const shopHtml=()=>`<div class="c"><div class="hd">${thumb(S.logo)}<div><b>${esc(S.name)}</b><br><small>${S.pending?'⏳ Chờ duyệt':S.show?'🟢 Đang hiện trên web':'⚪ Đang ẩn'}${S.busy?' · 🔴 Đang bận':''} · ${S.items.length} món</small></div></div>
-<div data-t="shop"><label>Logo quán (dán link ảnh https hoặc bấm Tải ảnh)</label><div class="g"><input data-f="logo" value="${esc(S.logo)}"><button data-up="logo">Tải ảnh</button></div>
+<div data-t="shop"><label>🔒 Tên quán và logo do quản trị đặt, nhà bán không tự sửa được</label><input value="${esc(S.name)}" readonly disabled style="background:#f1f5f2"><input value="${esc(S.logo)}" placeholder="(chưa có logo, nhờ quản trị cập nhật)" readonly disabled style="background:#f1f5f2;margin-top:6px">
 <label>Mô tả ngắn: quán bán gì</label><input data-f="desc" maxlength="300" value="${esc(S.desc)}">
 <label>✉️ Gmail nhận đơn (khách đặt món của quán thì quán nhận mail; để trống = không nhận mail)</label><input data-f="email" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com" value="${esc(S.email)}">
 <label>💬 Zalo ID nhận đơn (do quản trị cấp; để trống nếu chưa có)</label><input data-f="zalo" value="${esc(S.zalo)}">
@@ -113,18 +115,18 @@ const shopHtml=()=>`<div class="c"><div class="hd">${thumb(S.logo)}<div><b>${esc
 function cw(){if(!CW)CW=(S.cats||[]).map(c=>({o:c,n:c}));return CW}
 const catOpts=c=>{c=c||'';const cs=S.cats||[];return '<option value="">(Chưa phân nhóm)</option>'+cs.map(x=>`<option ${x===c?'selected':''}>${esc(x)}</option>`).join('')+(c&&!cs.includes(c)?`<option selected>${esc(c)}</option>`:'')};
 const catsCard=()=>{const w=cw();return `<div class="c"><b>🗂️ Nhóm món</b><br><small class="mute">VD: 🧋 Trà sữa, 🍟 Ăn vặt. Khách thấy các nhóm này khi vào quán. Dùng ↑ ↓ để đổi thứ tự. Nhớ bấm Lưu nhóm.</small>${w.map((c,i)=>`<div class="g" data-ci="${i}"><input data-cname value="${esc(c.n)}"><button data-cup="${i}" ${i?'':'disabled'}>↑</button><button data-cdn="${i}" ${i<w.length-1?'':'disabled'}>↓</button><button class="d" data-cdel="${i}">✕</button></div>`).join('')}<div class="g"><input id="ncat" placeholder="Tên nhóm mới"><button data-cadd>Thêm</button></div><button class="p" data-csave style="margin-top:8px;width:100%">Lưu nhóm</button></div>`};
-const bulkCard=()=>`<div class="c"><b>📋 Nhập nhiều món cùng lúc</b><br><small class="mute">Mỗi dòng một món: <b>Tên | Giá | Mô tả | Nhóm</b> (mô tả và nhóm có thể bỏ trống). Dán thẳng từ Excel/Google Sheet cũng được. Giá viết 25000, 25.000 hoặc 25k. Món trùng tên với món đã có sẽ bị bỏ qua.</small><textarea id="bulk" rows="7" style="margin-top:6px" placeholder="Trà sữa trân châu | 25000 | Vị đậm | Trà sữa&#10;Trà đào cam sả | 30k | | Trà trái cây"></textarea><button class="p" data-bulk style="margin-top:8px;width:100%">Thêm các món này</button></div>`;
+const addCard=()=>`<div class="c"><b>➕ Thêm món mới</b><br><small class="mute">Bấm để thêm nhiều ô món trống cùng lúc, nhập xong bấm <b>Lưu tất cả các món</b> ở thanh dưới cùng. Ô để trống sẽ được bỏ qua. Giá viết 25000, 25.000 hoặc 25k.</small><div class="seg" style="flex-wrap:wrap">${[10,20,30,50,100].map(n=>`<button data-addn="${n}">+ ${n} món</button>`).join('')}</div></div>`;
 const BLANK={row:0,name:'',price:'',desc:'',emoji:'',img:'',cat:'',state:'show'};
 const itemRow=it=>`<div class="c" data-t="item" data-row="${it.row||0}" data-n="${esc(String(it.name).toLowerCase())}"><div class="hd">${thumb(it.img,esc(it.emoji)||'🍽️')}<b>${it.row?esc(it.name):'➕ Thêm một món mới'}</b></div>
 <input data-f="name" placeholder="Tên món" maxlength="80" value="${esc(it.name)}"><div class="g2" style="margin-top:6px"><input data-f="price" inputmode="numeric" placeholder="Giá (VD 25000)" value="${esc(it.price)}"><input data-f="emoji" placeholder="Emoji" value="${esc(it.emoji)}"></div>
 <input data-f="desc" placeholder="Mô tả món" maxlength="200" style="margin-top:6px" value="${esc(it.desc)}"><label>Nhóm món</label><select data-f="cat">${catOpts(it.cat)}</select>
 <div class="g"><input data-f="img" placeholder="Link ảnh món (https)" value="${esc(it.img)}"><button data-up="img">Tải ảnh</button></div>
 ${it.row?`<div class="seg">${[['show','Đang bán'],['out','Hết món'],['hide','Ẩn']].map(([k,l])=>`<button class="${(it.state||'show')===k?'p':''}" data-qs="${k}" data-row="${it.row}" data-name="${esc(it.name)}">${l}</button>`).join('')}</div>`:''}
-<div class="g"><button class="p" data-saveitem>${it.row?'Lưu món':'Thêm món'}</button>${it.row?'<button class="d" data-del>Xóa</button>':''}</div></div>`;
+<div class="g">${it.row?'<button class="p" data-saveitem>Lưu món</button><button class="d" data-del>Xóa</button>':'<button class="d" data-drop>✕ Bỏ ô này</button>'}</div></div>`;
 function itemsHtml(){
  const cs=S.cats||[],known=new Set(cs);let list='';
  [...cs,''].forEach(c=>{const a=S.items.filter(i=>c?i.cat===c:!known.has(i.cat||''));if(a.length)list+=`<h3 class="gh">${esc(c||'Chưa phân nhóm')} <small>(${a.length})</small></h3>`+a.map(itemRow).join('')});
- return catsCard()+bulkCard()+itemRow(BLANK)+`<div class="c"><label style="margin:0">🔎 Tìm món trong quán (${S.items.length} món)</label><input id="q" placeholder="Gõ tên món" value="${esc(Q)}"></div>`+(list||'<p class="mute">Chưa có món nào. Hãy thêm món ở trên.</p>')}
+ return catsCard()+addCard()+'<div id="newbox">'+itemRow(BLANK)+'</div>'+`<div class="c"><label style="margin:0">🔎 Tìm món trong quán (${S.items.length} món)</label><input id="q" placeholder="Gõ tên món" value="${esc(Q)}"></div>`+(list||'<p class="mute">Chưa có món nào. Hãy thêm món ở trên.</p>')}
 function filterItems(){const q=Q.trim().toLowerCase();document.querySelectorAll('#main [data-t=item]').forEach(c=>{if(!+c.dataset.row)return;c.style.display=!q||c.dataset.n.includes(q)?'':'none'})}
 const ordersHtml=()=>`<p class="mute" style="margin:2px 0 10px">Chỉ hiện phần món của quán bạn. Trang tự cập nhật mỗi 40 giây, có tiếng báo khi có đơn mới.${S.share?'':' Số điện thoại và vị trí khách chưa được cấp quyền: hãy liên hệ quản trị nếu cần.'}</p>`+(ORD.map(o=>`<div class="c"><b>${esc(o.code)}</b> <small>${esc(o.time)}</small> <span class="tag">${esc(o.status)}</span><br>👤 ${esc(o.name)}${o.phone?` · <a href="tel:${esc(o.phone)}"><b>📞 ${esc(o.phone)}</b></a> · <a href="https://zalo.me/${esc(String(o.phone).replace(/\D/g,''))}" target="_blank" rel="noopener">Zalo</a>`:''}<br><small>📍 ${esc(o.addr)}</small>${mapOk(o.map)?` · <a href="${esc(o.map)}" target="_blank" rel="noopener">Mở Google Maps</a>`:''}${o.note?`<br><small>📝 ${esc(o.note)}</small>`:''}<pre>${esc(o.lines.join('\n'))}</pre><b>Tiền quán: ${money(o.sub)}</b> · ${esc(o.pay||'')}</div>`).join('')||'<p class="mute">Chưa có đơn nào.</p>');
 const ratesHtml=()=>RAT.map(r=>`<div class="c">${r.dish?'<b>'+esc(r.dish)+'</b> ':'<b>Đánh giá quán</b> '}<span class="tag">${'★'.repeat(r.star)}${'☆'.repeat(5-r.star)}</span><br>${esc(r.cmt)||'<i>(không nhận xét)</i>'}<br><small>${esc(r.name)} · ${esc(r.time)}</small></div>`).join('')||'<p class="mute">Chưa có đánh giá.</p>';
@@ -156,23 +158,37 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
   const ren={};w.forEach(x=>{if(x.o&&x.o!==x.n.trim())ren[x.o]=x.n.trim()});
   b.disabled=true;const r=await call({act:'saveCats',cats:names,renames:ren});b.disabled=false;
   if(r.ok){CW=null;toast('Đã lưu nhóm ✓');await load(true)}else toast(r.msg||'Lỗi');return}
- /* nhập hàng loạt */
- if(d.bulk!==undefined){
-  const lines=$('bulk').value.split('\n').map(x=>x.trim()).filter(Boolean);if(!lines.length)return toast('Hãy dán danh sách món');
-  const have=new Set(S.items.map(i=>String(i.name).trim().toLowerCase())),seen=new Set(),add=[],bad=[],newCats=[];let dup=0;
-  lines.forEach((ln,k)=>{const p=ln.split(/\t|\|/).map(x=>x.trim()),name=p[0],price=parsePrice(p[1]);
-   if(!name||!(price>0)){bad.push('dòng '+(k+1));return}
-   const key=name.toLowerCase();if(have.has(key)||seen.has(key)){dup++;return}seen.add(key);
-   const cat=(p[3]||'').trim();if(cat&&!(S.cats||[]).includes(cat)&&!newCats.includes(cat))newCats.push(cat);
-   add.push({row:0,name,price,desc:p[2]||'',emoji:'🍽️',cat,img:'',state:'show'})});
-  if(bad.length)return toast('Thiếu tên hoặc giá ở '+bad.slice(0,5).join(', ')+(bad.length>5?'…':''));
-  if(!add.length)return toast(dup?'Tất cả món đã có trong quán':'Không có món hợp lệ');
-  b.disabled=true;
-  if(newCats.length){b.textContent='Đang tạo nhóm…';const rc=await call({act:'saveCats',cats:(S.cats||[]).concat(newCats),renames:{}});if(!rc.ok){b.disabled=false;b.textContent='Thêm các món này';return toast(rc.msg||'Lỗi tạo nhóm')}}
-  let done=0,msg='';
-  for(let i=0;i<add.length;i+=100){b.textContent='Đang lưu '+Math.min(i+100,add.length)+'/'+add.length+'…';const r=await call({act:'saveItems',items:add.slice(i,i+100)});if(!r.ok){msg=r.msg||'Lỗi';break}done+=Math.min(100,add.length-i)}
-  b.disabled=false;b.textContent='Thêm các món này';CW=null;
-  await load(true);toast(msg?('Đã thêm '+done+' món, lỗi: '+msg):('Đã thêm '+done+' món ✓'+(dup?' · bỏ qua '+dup+' món trùng':'')));return}
+ /* thêm ô món mới */
+ if(d.addn!==undefined){const n=+d.addn,blank=document.querySelectorAll('#main [data-t=item][data-row="0"]').length;
+  if(S.items.length+blank+n>400)return toast('Mỗi quán tối đa 400 món');
+  $('newbox').insertAdjacentHTML('beforeend',Array(n).fill(itemRow(BLANK)).join(''));
+  const f=document.querySelectorAll('#main [data-t=item][data-row="0"]')[blank];if(f)f.scrollIntoView({block:'start',behavior:'smooth'});
+  toast('Đã thêm '+n+' ô món mới. Nhập xong bấm "Lưu tất cả các món"');return}
+ if(d.drop!==undefined){c.remove();return}
+ /* lưu tất cả các món */
+ if(d.saveall!==undefined){
+  const cards=[...document.querySelectorAll('#main [data-t=item]')],list=[],names=new Map();let err='';
+  S.items.forEach(x=>names.set(x.row,String(x.name).trim().toLowerCase()));
+  cards.forEach(cd=>{if(err)return;const row=+cd.dataset.row,v=get(cd);
+   if(!row){if(!v.name&&!v.price&&!v.desc&&!v.img)return;
+    if(!v.name){err='Có ô món mới đã nhập nhưng thiếu tên món';return}
+    const p=parsePrice(v.price);if(!(p>0)){err='Món "'+v.name+'" chưa có giá';return}
+    names.set('n'+list.length,v.name.toLowerCase());list.push({row:0,name:v.name,price:p,desc:v.desc,emoji:v.emoji,cat:v.cat,img:v.img,state:'show'});return}
+   const o=S.items.find(x=>x.row===row);if(!o)return;
+   if(!v.name){err='Có món đang để trống tên';return}
+   const p=parsePrice(v.price);if(!(p>0)){err='Món "'+v.name+'" chưa có giá';return}
+   names.set(row,v.name.toLowerCase());
+   const same=v.name===String(o.name)&&p===Number(o.price)&&v.desc===String(o.desc||'')&&v.emoji===String(o.emoji||'')&&v.cat===String(o.cat||'')&&v.img===String(o.img||'');
+   if(!same)list.push({row,orig:o.name,name:v.name,price:p,desc:v.desc,emoji:v.emoji,cat:v.cat,img:v.img,state:o.state||'show'})});
+  if(err)return toast(err);
+  const arr=[...names.values()];if(new Set(arr).size<arr.length)return toast('Có hai món bị trùng tên, hãy đổi tên');
+  if(!list.length)return toast('Không có thay đổi để lưu');
+  b.disabled=true;const old=b.textContent;let done=0,msg='',failed=[];
+  for(let k=0;k<list.length;k+=100){b.textContent='Đang lưu '+Math.min(k+100,list.length)+'/'+list.length+'…';
+   const r=await call({act:'saveItems',items:list.slice(k,k+100)});if(!r.ok){msg=r.msg||'Lỗi';break}done+=Math.min(100,list.length-k);if(r.failed)failed=failed.concat(r.failed)}
+  b.disabled=false;b.textContent=old;
+  await load(true);
+  toast(msg?('Đã lưu '+done+' món, lỗi: '+msg):('Đã lưu '+(done-failed.length)+' món ✓'+(failed.length?' · bỏ qua (danh sách đã đổi): '+failed.join(', '):'')));return}
  /* món */
  if(d.qs){const it=S.items.find(x=>x.row==d.row);const r=await call({act:'setState',row:+d.row,name:d.name,state:d.qs});if(r.ok){if(it)it.state=d.qs;render();toast('Đã cập nhật ✓')}else toast(r.msg||'Lỗi');return}
  if(d.saveitem!==undefined){const row=+c.dataset.row,v=get(c),it=row?S.items.find(x=>x.row===row):null,price=parsePrice(v.price);
