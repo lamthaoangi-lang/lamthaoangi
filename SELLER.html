@@ -49,6 +49,9 @@ a{color:#1d4ed8}
    <label>Số điện thoại chủ quán *</label><input id="rp" inputmode="tel">
    <label>Gmail nhận đơn (không bắt buộc, thêm sau cũng được)</label><input id="re" type="email" inputmode="email" autocomplete="off" placeholder="quan@gmail.com">
    <label>Mô tả ngắn: quán bán gì (VD: Trà sữa · Ăn vặt)</label><input id="rd" maxlength="120">
+   <label>🖼️ Logo hoặc ảnh quán (không bắt buộc, nên có)</label>
+   <div class="g" style="align-items:center"><span class="th" id="rlp" style="width:64px;height:64px">🏪</span><button type="button" id="rlb" style="flex:1">Chọn ảnh từ máy</button><button type="button" class="d" id="rlx" hidden>Bỏ ảnh</button></div>
+   <p class="mute" style="margin-top:4px">Sau khi đăng ký, tên quán và logo do quản trị quản lý nên bạn không tự sửa được. Hãy chọn ảnh vuông, rõ nét.</p>
    <label>Đặt mã quản lý (6 ký tự trở lên, dùng để đăng nhập) *</label><input id="rk" type="password" autocomplete="new-password">
    <label>Nhập lại mã *</label><input id="rk2" type="password" autocomplete="new-password">
    <div class="g"><button class="p" id="rgo" style="width:100%">Gửi đăng ký</button></div>
@@ -88,13 +91,16 @@ $('lgo').onclick=async()=>{SHOP=$('ln').value.trim();KEY=$('lk').value;if(!SHOP|
  if(!r.ok){toast(r.msg||'Không đăng nhập được');SHOP=KEY='';return}
  try{if($('lr').checked)localStorage.setItem('sl',JSON.stringify({s:SHOP,k:KEY}));else localStorage.removeItem('sl')}catch(e){}};
 $('lk').onkeydown=e=>{if(e.key==='Enter')$('lgo').click()};
+let RLOGO='';
+$('rlb').onclick=()=>pick(x=>{RLOGO=x;$('rlp').innerHTML='<img src="data:image/jpeg;base64,'+x+'" alt="">';$('rlx').hidden=false},300);
+$('rlx').onclick=()=>{RLOGO='';$('rlp').textContent='🏪';$('rlx').hidden=true};
 $('rgo').onclick=async()=>{const n=$('rn').value.trim(),p=$('rp').value.trim(),em=$('re').value.trim(),k=$('rk').value;
  if(!n)return toast('Nhập tên quán');if(p.replace(/\D/g,'').length<9)return toast('Số điện thoại chưa đúng');if(em&&!EMAIL_RE.test(em))return toast('Email chưa đúng định dạng');
  if(k.length<6)return toast('Mã quản lý cần ít nhất 6 ký tự');if(k!==$('rk2').value)return toast('Hai lần nhập mã chưa giống nhau');
  const b=$('rgo');b.disabled=true;b.textContent='Đang gửi…';
- const r=await post({seller:1,act:'register',shop:n,phone:p,email:em,desc:$('rd').value.trim(),key:k});b.disabled=false;b.textContent='Gửi đăng ký';
+ const r=await post({seller:1,act:'register',shop:n,phone:p,email:em,desc:$('rd').value.trim(),key:k,logo:RLOGO});b.disabled=false;b.textContent='Gửi đăng ký';
  if(!r.ok)return toast(r.msg||'Lỗi');
- $('pReg').innerHTML='<b>✅ Đã gửi đăng ký!</b><p style="margin-top:8px">Quán <b>'+esc(n)+'</b> đang chờ quản trị viên duyệt. Bạn có thể đăng nhập ngay bằng tên quán + mã vừa đặt để nhập món sẵn. Quán sẽ hiện trên web sau khi được duyệt.</p><div class="g"><button class="p" id="goLogin" style="width:100%">Đăng nhập luôn</button></div>';
+ $('pReg').innerHTML='<b>✅ Đã gửi đăng ký!</b><p style="margin-top:8px">Quán <b>'+esc(n)+'</b> đang chờ quản trị viên duyệt (logo và thông tin sẽ được xem lại trước khi hiện trên web). Bạn có thể đăng nhập ngay bằng tên quán + mã vừa đặt để nhập món sẵn. Quán sẽ hiện trên web sau khi được duyệt.</p><div class="g"><button class="p" id="goLogin" style="width:100%">Đăng nhập luôn</button></div>';
  $('goLogin').onclick=()=>{document.querySelector('[data-tab=login]').click();$('ln').value=n;$('lk').value=k;$('lgo').click()}};
 
 /* ---------- giao diện ---------- */
