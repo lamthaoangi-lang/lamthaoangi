@@ -367,7 +367,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(d.a!==undefined){if(MENU[d.a].out)return;if(isBusy(MENU[d.a].shop)){slide('Quán đang bận, bạn quay lại sau nhé!',3000);return}cart[d.a]=(cart[d.a]||0)+1;upd(d.a);drawCart()}
  if(d.m!==undefined){if(--cart[d.m]<=0)delete cart[d.m];upd(d.m);drawCart()}
 });
-$('fab').onclick=()=>{sheet(true);warmLoc()};$('close').onclick=$('bk').onclick=()=>sheet(false);
+$('fab').onclick=()=>{sheet(true);warmLoc();fetch(API_URL+'?ping=1',{cache:'no-store'}).catch(()=>{})};$('close').onclick=$('bk').onclick=()=>sheet(false);
 const LOCTXT='Bắt buộc: cho phép lấy vị trí để shipper tìm đúng nhà bạn.';
 function getLoc(){return new Promise(ok=>{
  const lm=$('locmsg');
@@ -396,7 +396,7 @@ $('order').onclick=async()=>{
  if(!name||!phone){m.textContent='Vui lòng điền đủ họ tên và số điện thoại.';return}
  if(!xa){m.textContent='Vui lòng chọn xã / thị trấn nhận hàng.';return}
  if(!/^(0|\+84)\d{9,10}$/.test(phone)){m.textContent='Số điện thoại chưa đúng, vui lòng kiểm tra lại.';return}
- if(!MAP&&!(await getLoc())){m.textContent='Bạn cần cho phép chia sẻ vị trí để đặt hàng.';return}
+ if(!MAP){m.textContent='Đang lấy vị trí của bạn, vui lòng chờ vài giây…';$('order').disabled=true;const okLoc=await getLoc();$('order').disabled=false;if(!okLoc){m.textContent='Bạn cần cho phép chia sẻ vị trí để đặt hàng.';return}}
  const items=ids.map(i=>({shop:MENU[i].shop,name:MENU[i].name,qty:cart[i],price:MENU[i].price,emoji:MENU[i].emoji,img:MENU[i].img}));
  const sf=shipFee(sub),ship=baseShip()!==null?(sf?money(sf):'Miễn phí'):'Thỏa thuận sau khi xác nhận',total=sub+sf,pay=document.querySelector('input[name=pay]:checked').value;
  const d=new Date(),code='LT-'+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+Math.floor(1000+Math.random()*9000);
@@ -474,7 +474,12 @@ addEventListener('online',()=>load());document.addEventListener('visibilitychang
 try{const c=JSON.parse(localStorage.getItem('ltcus')||'{}');$('name').value=c.name||'';$('phone').value=c.phone||'';if(c.xa)$('xa').value=c.xa}catch(e){}
 let DP;addEventListener('beforeinstallprompt',e=>{e.preventDefault();DP=e;$('inst').hidden=false});
 $('inst').onclick=async()=>{if(!DP)return;DP.prompt();await DP.userChoice;$('inst').hidden=true};
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator)addEventListener('load',()=>{
+ navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update().catch(()=>{});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')r.update().catch(()=>{})})}).catch(()=>{});
+ // Có bản web mới -> tự tải lại 1 lần (không tải lại khi khách đang mở giỏ hàng)
+ let had=!!navigator.serviceWorker.controller,rl=false;
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had){had=true;return}if(rl||$('sheet').classList.contains('on'))return;rl=true;location.reload()});
+});
 </script>
 </body>
 </html>
