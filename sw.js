@@ -1,4 +1,4 @@
-const V='lt-v4',SHELL=['./','index.html','manifest.json','icon-192.png','icon-512.png'];
+const V='lt-v5',SHELL=['./','index.html','manifest.json','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // Trang/JS/JSON: luôn hỏi máy chủ xem có bản mới không (cache:'no-cache' bỏ qua bộ nhớ 10 phút của GitHub Pages), chậm quá 6 giây hoặc mất mạng mới dùng bản đã lưu.
